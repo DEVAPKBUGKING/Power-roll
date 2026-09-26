@@ -284,6 +284,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="stats-panel" style="margin-top:0"><div class="stats-title">🤝 Send Trade Request</div>
 <div class="trade-search"><input type="text" id="tradeUsername" placeholder="Username player..."><button id="sendTradeBtn">SEND</button></div></div>
 <div id="tradeIncoming"></div>
+<div id="tradeOutgoing"></div>
 <div id="tradeRoomContainer"></div>
 <div class="stats-panel"><div class="stats-title">📜 Trade History</div><div id="tradeHistory" style="font-size:11px;color:var(--muted)">Belum ada trade.</div></div>
 </section>
@@ -312,7 +313,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <script>
 'use strict';
 // ══════════════════════════════════════════════════════
-// ⚙️ CONFIG — GANTI DENGAN MILIK ANDA
+// CONFIG
 // ══════════════════════════════════════════════════════
 const SUPABASE_URL='https://hrijffzwkrmxwreznaqd.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_wZlLFlvWCIuuOha0iUg67g_Pfr2Opzp';
@@ -405,7 +406,7 @@ function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|
 let state={user:null,profile:null,role:'user',
 stats:{total_rolls:0,luck:0,money:0,held_coins:0,discovered_count:0,highest_power_chance:0,highest_power_id:null,luck_earned:0,quests_done:0},
 inventory:{},quests:[],questResetAt:0,muted:false,shopRefreshAt:0,shopItems:[],rolling:false,
-currentTrade:null,auctions:[],lbPrevRolls:{},lbPrevRarity:{},incomingTrades:[]};
+currentTrade:null,pendingOutgoing:null,auctions:[],auctionNames:{},lbPrevRolls:{},lbPrevRarity:{},incomingTrades:[]};
 
 // ══════════════════════════════════════════════════════
 // HELPERS
@@ -479,6 +480,7 @@ async function onLoginSuccess(){
   authModal.classList.remove('show');await loadCloudState();updateUI();
   subscribeRealtime();subscribeTradeRealtime();subscribeAuctionRealtime();
   startQuestTimer();refreshShopIfNeeded();loadLeaderboard();loadAuctions();loadTradeHistory();loadIncomingTrades();
+  await restoreTradeState();
 }
 
 // ══════════════════════════════════════════════════════
@@ -510,7 +512,7 @@ function updateUI(){
 }
 
 // ══════════════════════════════════════════════════════
-// QUEST (15 min, 5 quests)
+// QUEST
 // ══════════════════════════════════════════════════════
 const QUEST_INTERVAL=15*60*1000,QUEST_COUNT=5;
 const QUEST_RARITY_WEIGHTS=[{id:'common',weight:35},{id:'uncommon',weight:28},{id:'rare',weight:20},{id:'epic',weight:10},{id:'legendary',weight:5},{id:'mythic',weight:2}];
@@ -567,7 +569,6 @@ async function claimQuest(qid){
 }
 let questSaveTimer=null;
 function saveQuestsDebounced(){if(questSaveTimer)clearTimeout(questSaveTimer);questSaveTimer=setTimeout(async()=>{if(!state.user)return;await sb.from('quest_state').upsert({user_id:state.user.id,quests:state.quests,reset_at:new Date(state.questResetAt).toISOString(),updated_at:new Date().toISOString()})},800)}
-
 function questText(q){
   switch(q.type){
     case 'rolls':return `Perform ${q.target} Rolls`;
@@ -784,11 +785,15 @@ async function loadLeaderboard(){
 // TRADE
 // ══════════════════════════════════════════════════════
 async function sendTradeRequest(){
-  const un=document.getElementById('tradeUsername').value.trim();if(!un){showToast('Masukkan username');return}
+  const un=document.getElementById('tradeUsername').value.trim();
+  if(!un){showToast('Masukkan username');return}
   try{
     const{data,error}=await sb.rpc('send_trade_request',{p_receiver_username:un});
     if(error)throw error;
-    showToast(`✅ Request terkirim ke ${un}`);document.getElementById('tradeUsername').value='';
+    showToast(`✅ Request terkirim ke ${un}`);
+    document.getElementById('tradeUsername').value='';
+    state.pendingOutgoing={request_id:data.request_id,username:un};
+    renderOutgoingWaiting();
   }catch(e){showToast(e.message||'Gagal kirim')}
 }
 async function loadIncomingTrades(){
@@ -798,16 +803,47 @@ async function loadIncomingTrades(){
   updateUI();
   const box=document.getElementById('tradeIncoming');
   if(!data||data.length===0){box.innerHTML='';return}
-  // Ambil username sender
   const senderIds=[...new Set(data.map(r=>r.sender_id))];
   const{data:profs}=await sb.from('profiles').select('id,username').in('id',senderIds);
   const nameMap={};(profs||[]).forEach(p=>nameMap[p.id]=p.username);
   box.innerHTML=data.map(r=>`<div class="trade-request-card"><div class="tr-from">🤝 Trade request dari <b>${escapeHtml(nameMap[r.sender_id]||'?')}</b></div><div class="tr-actions"><button class="btn-accept" data-req="${r.id}" data-act="yes">TERIMA</button><button class="btn-reject" data-req="${r.id}" data-act="no">TOLAK</button></div></div>`).join('');
   box.querySelectorAll('button').forEach(b=>{b.onclick=()=>respondTrade(b.dataset.req,b.dataset.act==='yes')});
 }
+function renderOutgoingWaiting(){
+  const box=document.getElementById('tradeOutgoing');if(!box)return;
+  if(!state.pendingOutgoing){box.innerHTML='';return}
+  box.innerHTML=`<div class="stats-panel" style="border-color:var(--accent)"><div class="stats-title">🤝 Trade Request</div><div style="text-align:center;padding:20px 10px"><div style="font-size:32px;margin-bottom:8px">⏳</div><div style="font-size:14px;font-weight:800;margin-bottom:4px">Waiting for ${escapeHtml(state.pendingOutgoing.username)}...</div><div style="font-size:11px;color:var(--muted);margin-bottom:16px">Menunggu respon</div><button id="cancelOutgoingBtn" style="background:rgba(239,68,68,.2);color:#f87171;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px">CANCEL REQUEST</button></div></div>`;
+  document.getElementById('cancelOutgoingBtn').onclick=async()=>{
+    try{
+      await sb.rpc('cancel_trade_request',{p_request_id:state.pendingOutgoing.request_id});
+      state.pendingOutgoing=null;renderOutgoingWaiting();showToast('Request dibatalkan');
+    }catch(e){showToast(e.message||'Gagal cancel')}
+  };
+}
+async function restoreTradeState(){
+  if(!state.user)return;
+  try{
+    const{data,error}=await sb.rpc('get_my_active_trade');
+    if(error)return;
+    if(!data){state.pendingOutgoing=null;state.currentTrade=null;renderOutgoingWaiting();document.getElementById('tradeRoomContainer').innerHTML='';return}
+    if(data.status==='pending'){
+      if(data.sender_id===state.user.id){
+        const{data:recvProf}=await sb.from('profiles').select('username').eq('id',data.receiver_id).single();
+        state.pendingOutgoing={request_id:data.request_id,username:recvProf?.username||'?'};
+        renderOutgoingWaiting();
+      } else { renderOutgoingWaiting(); }
+      state.currentTrade=null;
+      document.getElementById('tradeRoomContainer').innerHTML='';
+    } else if(data.status==='accepted' && data.trade_id){
+      state.pendingOutgoing=null;renderOutgoingWaiting();
+      state.currentTrade=data.trade_id;await refreshTradeRoom();
+    }
+  }catch(e){console.warn('restoreTradeState',e)}
+}
 async function respondTrade(rid,accept){
   try{
-    const{data,error}=await sb.rpc('respond_trade_request',{p_request_id:rid,p_accept:accept});if(error)throw error;
+    const{data,error}=await sb.rpc('respond_trade_request',{p_request_id:rid,p_accept:accept});
+    if(error)throw error;
     if(data.accepted){state.currentTrade=data.trade_id;await openTradeRoom(data.trade_id)}
     else{showToast('Trade ditolak');loadIncomingTrades()}
   }catch(e){showToast(e.message||'Gagal')}
@@ -817,6 +853,7 @@ async function refreshTradeRoom(){
   if(!state.currentTrade){document.getElementById('tradeRoomContainer').innerHTML='';return}
   const{data:trade}=await sb.from('trades').select('*').eq('id',state.currentTrade).single();
   if(!trade){document.getElementById('tradeRoomContainer').innerHTML='';return}
+  if(trade.player_a!==state.user.id && trade.player_b!==state.user.id){document.getElementById('tradeRoomContainer').innerHTML='';state.currentTrade=null;return}
   const{data:items}=await sb.from('trade_items').select('*').eq('trade_id',state.currentTrade);
   const isA=trade.player_a===state.user.id;const side=isA?'a':'b';const otherSide=isA?'b':'a';
   const{data:otherProf}=await sb.from('profiles').select('username').eq('id',isA?trade.player_b:trade.player_a).single();
@@ -847,6 +884,8 @@ async function refreshTradeRoom(){
   const rdyBtn=document.getElementById('readyBtn');if(rdyBtn)rdyBtn.onclick=()=>setReady(!myReady);
   const confBtn=document.getElementById('confirmBtn');if(confBtn)confBtn.onclick=()=>confirmTrade();
   const cancelBtn=document.getElementById('cancelTradeBtn');if(cancelBtn)cancelBtn.onclick=()=>cancelTrade();
+  state.pendingOutgoing=null;
+  const outBox=document.getElementById('tradeOutgoing');if(outBox)outBox.innerHTML='';
 }
 async function setReady(ready){
   try{const{error}=await sb.rpc('set_trade_ready',{p_trade_id:state.currentTrade,p_ready:ready});if(error)throw error;await refreshTradeRoom()}
@@ -872,8 +911,7 @@ function openCoinsModal(){
     try{
       const{error}=await sb.rpc('update_trade_coins',{p_trade_id:state.currentTrade,p_coins:n});
       if(error)throw error;
-      document.getElementById('coinsModal').classList.remove('show');
-      await refreshTradeRoom();
+      document.getElementById('coinsModal').classList.remove('show');await refreshTradeRoom();
     }catch(e){showToast(e.message||'Gagal')}
   };
 }
@@ -886,12 +924,10 @@ function openCardPicker(){
     return`<div class="pick-item"><span>${escapeHtml(card.name)} <small style="color:var(--muted)">x${v.quantity}</small></span><div class="qty-ctrl"><button data-act="minus">−</button><input type="number" value="0" min="0" max="${v.quantity}" data-pid="${pid}"><button data-act="plus">+</button></div></div>`;
   }).join('');
   list.querySelectorAll('button').forEach(b=>{
-    b.onclick=()=>{const inp=b.parentElement.querySelector('input');const cur=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(b.dataset.act==='plus')inp.value=Math.min(cur+1,max);else inp.value=Math.max(cur-1,0);
-      updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
+    b.onclick=()=>{const inp=b.parentElement.querySelector('input');const cur=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(b.dataset.act==='plus')inp.value=Math.min(cur+1,max);else inp.value=Math.max(cur-1,0);updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
   });
   list.querySelectorAll('input').forEach(inp=>{
-    inp.onchange=()=>{const v=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(v>max)inp.value=max;if(v<0)inp.value=0;
-      updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
+    inp.onchange=()=>{const v=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(v>max)inp.value=max;if(v<0)inp.value=0;updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
   });
   document.getElementById('cardPickerModal').classList.add('show');
 }
@@ -905,9 +941,12 @@ async function loadTradeHistory(){
   const{data}=await sb.from('trades').select('*').or(`player_a.eq.${state.user.id},player_b.eq.${state.user.id}`).order('created_at',{ascending:false}).limit(5);
   const el=document.getElementById('tradeHistory');
   if(!data||data.length===0){el.textContent='Belum ada trade.';return}
+  const otherIds=data.map(t=>t.player_a===state.user.id?t.player_b:t.player_a);
+  const{data:profs}=await sb.from('profiles').select('id,username').in('id',[...new Set(otherIds)]);
+  const nameMap={};(profs||[]).forEach(p=>nameMap[p.id]=p.username);
   el.innerHTML=data.map(t=>{
-    const role=t.player_a===state.user.id?'A':'B';const otherId=role==='A'?t.player_b:t.player_a;
-    const otherName='User_'+(otherId||'').slice(0,6);
+    const otherId=t.player_a===state.user.id?t.player_b:t.player_a;
+    const otherName=nameMap[otherId]||'User_'+otherId.slice(0,6);
     const st={completed:'✅',cancelled:'❌',failed:'⚠️',active:'🟢'}[t.status]||'';
     return`<div style="padding:6px 0;border-bottom:1px solid var(--border)">${st} Trade vs ${escapeHtml(otherName)} · ${t.status}</div>`;
   }).join('');
@@ -919,11 +958,13 @@ async function loadTradeHistory(){
 async function loadAuctions(){
   const{data}=await sb.from('auction_listings').select('*').eq('status','active').order('ends_at',{ascending:true}).limit(50);
   state.auctions=data||[];
-  // Ambil usernames
   const sellerIds=[...new Set((data||[]).map(a=>a.seller_id))];
-  const{data:profs}=await sb.from('profiles').select('id,username').in('id',sellerIds.length?sellerIds:['00000000-0000-0000-0000-000000000000']);
-  const nameMap={};(profs||[]).forEach(p=>nameMap[p.id]=p.username);
-  state.auctionNames=nameMap;
+  const bidderIds=[...new Set((data||[]).filter(a=>a.highest_bidder_id).map(a=>a.highest_bidder_id))];
+  const allIds=[...new Set([...sellerIds,...bidderIds])];
+  if(allIds.length){
+    const{data:profs}=await sb.from('profiles').select('id,username').in('id',allIds);
+    state.auctionNames={};(profs||[]).forEach(p=>state.auctionNames[p.id]=p.username);
+  } else {state.auctionNames={}}
   renderAuctions();
 }
 function renderAuctions(){
@@ -993,6 +1034,7 @@ function subscribeRealtime(){
 function subscribeTradeRealtime(){
   if(tradeChannel)sb.removeChannel(tradeChannel);
   tradeChannel=sb.channel('trade-ch')
+  // Trade request baru masuk (kita receiver)
   .on('postgres_changes',{event:'INSERT',schema:'public',table:'trade_requests',filter:`receiver_id=eq.${state.user.id}`},async payload=>{
     const r=payload.new;if(!r||r.status!=='pending')return;
     const{data:prof}=await sb.from('profiles').select('username').eq('id',r.sender_id).single();
@@ -1000,14 +1042,59 @@ function subscribeTradeRealtime(){
       [{label:'TERIMA',act:()=>respondTrade(r.id,true)},{label:'TOLAK',act:()=>respondTrade(r.id,false)}]);
     loadIncomingTrades();
   })
-  .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async payload=>{
-    const t=payload.new;if(!t||t.id!==state.currentTrade)return;
-    if(t.status==='completed'){showToast('✅ Trade selesai!');state.currentTrade=null;await loadCloudState();updateUI();renderIndex();loadTradeHistory();document.getElementById('tradeRoomContainer').innerHTML=''}
-    else if(t.status==='cancelled'){showToast('Trade dibatalkan');state.currentTrade=null;document.getElementById('tradeRoomContainer').innerHTML=''}
-    else await refreshTradeRoom();
+  // UPDATE trade request — untuk SENDER + RECEIVER
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'trade_requests'},async payload=>{
+    const r=payload.new;if(!r)return;
+    const isSender=r.sender_id===state.user.id;
+    const isReceiver=r.receiver_id===state.user.id;
+    if(!isSender && !isReceiver) return;
+    if(r.status==='accepted' && r.trade_id){
+      state.pendingOutgoing=null;renderOutgoingWaiting();
+      state.currentTrade=r.trade_id;await refreshTradeRoom();
+      const tradeTab=document.querySelector('[data-tab="trade"]');
+      if(tradeTab && !document.getElementById('pane-trade').classList.contains('active')){
+        tradeTab.click();
+      }
+      showToast('✅ Trade dimulai!');
+    }
+    else if(r.status==='rejected'){
+      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting();showToast('❌ Trade ditolak')}
+    }
+    else if(r.status==='cancelled'){
+      loadIncomingTrades();
+      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}
+    }
+    else if(r.status==='expired'){
+      loadIncomingTrades();
+      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}
+    }
   })
+  // Trades table (untuk completed/cancelled)
+  .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async payload=>{
+    const t=payload.new;if(!t)return;
+    const isPlayer=(t.player_a===state.user.id || t.player_b===state.user.id);
+    if(!isPlayer) return;
+    if(t.id!==state.currentTrade){
+      if(t.status==='active'){state.currentTrade=t.id;await refreshTradeRoom()}
+      return;
+    }
+    if(t.status==='completed'){
+      showToast('✅ Trade selesai!');
+      state.currentTrade=null;
+      await loadCloudState();updateUI();renderIndex();loadTradeHistory();
+      document.getElementById('tradeRoomContainer').innerHTML='';
+    }
+    else if(t.status==='cancelled'){
+      showToast('Trade dibatalkan');
+      state.currentTrade=null;
+      document.getElementById('tradeRoomContainer').innerHTML='';
+    }
+    else { await refreshTradeRoom() }
+  })
+  // trade_items
   .on('postgres_changes',{event:'*',schema:'public',table:'trade_items'},payload=>{
-    const t=payload.new||payload.old;if(!t||t.trade_id!==state.currentTrade)return;refreshTradeRoom();
+    const t=payload.new||payload.old;if(!t||t.trade_id!==state.currentTrade)return;
+    refreshTradeRoom();
   }).subscribe();
 }
 function subscribeAuctionRealtime(){
@@ -1024,7 +1111,7 @@ function subscribeAuctionRealtime(){
 }
 
 // ══════════════════════════════════════════════════════
-// TOAST
+// TOAST + UTIL
 // ══════════════════════════════════════════════════════
 function showToast(text,cls){
   let c=document.getElementById('toastContainer');if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}
@@ -1040,10 +1127,6 @@ function showToastWithActions(text,cls,actions){
   setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400)},15000);
 }
 function showLuckFloat(l,m){const el=document.createElement('div');el.className='luck-float';el.textContent=`🍀 +${l}${m?' 💰 +'+m:''}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
-
-// ══════════════════════════════════════════════════════
-// AUDIO
-// ══════════════════════════════════════════════════════
 let audioCtx=null;
 function beep(freq,dur=0.08,type='sine',vol=0.05){
   if(state.muted)return;
@@ -1076,7 +1159,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     if(t.dataset.tab==='quest')renderQuests();
     if(t.dataset.tab==='shop'){refreshShopIfNeeded();renderShop()}
     if(t.dataset.tab==='lb')loadLeaderboard();
-    if(t.dataset.tab==='trade'){loadIncomingTrades();if(state.currentTrade)refreshTradeRoom();loadTradeHistory()}
+    if(t.dataset.tab==='trade'){loadIncomingTrades();restoreTradeState();loadTradeHistory()}
     if(t.dataset.tab==='auction')loadAuctions();
   };
 });
