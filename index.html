@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Power Rolling — Cloud Edition</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#07070c;--card:#14141f;--card2:#1a1a28;--border:#252534;--text:#ededf2;--muted:#8b8ba0;--accent:#8b5cf6;--accent2:#22d3ee;--luck:#4ade80;--money:#fbbf24;--common:#9ca3af;--uncommon:#4ade80;--rare:#60a5fa;--epic:#a78bfa;--legendary:#fbbf24;--mythic:#f472b6;--divine:#fde047;--transcendent:#22d3ee;--absolute:#ff00ff;--admin:#ef4444}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.4}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at top,#1a0f2e 0%,transparent 60%),radial-gradient(ellipse at bottom,#0a1a2e 0%,transparent 60%);z-index:-1;pointer-events:none}
+#app{max-width:1200px;margin:0 auto;padding:12px;min-height:100vh;display:flex;flex-direction:column}
+.header{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.brand{font-size:18px;font-weight:800;letter-spacing:-0.5px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.brand small{font-size:10px;color:var(--muted);font-weight:500;-webkit-text-fill-color:var(--muted);display:block;margin-top:2px}
+.header-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chip{background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:9px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:5px;transition:transform .3s}
+.chip.luck{color:var(--luck);border-color:rgba(74,222,128,.4)}
+.chip.money{color:var(--money);border-color:rgba(251,191,36,.4)}
+.chip.admin{color:var(--admin);border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1)}
+.chip.bump{transform:scale(1.15)}
+.icon-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.icon-btn:active{transform:scale(.94)}
+.tabs{display:flex;gap:5px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--border);margin-bottom:10px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;min-width:70px;padding:9px 10px;text-align:center;border-radius:8px;font-weight:700;font-size:11px;color:var(--muted);cursor:pointer;transition:all .25s;background:transparent;border:none;font-family:inherit;white-space:nowrap}
+.tab.active{background:linear-gradient(135deg,var(--accent),#6d28d9);color:#fff;box-shadow:0 4px 14px rgba(139,92,246,.35)}
+.tab-badge{background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:7px;margin-left:3px}
+.pane{display:none;flex:1;animation:fadeIn .3s}
+.pane.active{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.home-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+.stat-v{font-size:16px;font-weight:800;color:var(--accent2)}
+.stat-v.luck{color:var(--luck)}
+.stat-v.money{color:var(--money)}
+.stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.roll-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px 0;min-height:320px}
+.roll-btn{width:170px;height:170px;border-radius:50%;border:none;cursor:pointer;position:relative;font-family:inherit;background:linear-gradient(135deg,#8b5cf6 0%,#6d28d9 50%,#4c1d95 100%);color:#fff;font-size:20px;font-weight:900;letter-spacing:2px;box-shadow:0 0 60px rgba(139,92,246,.5);transition:transform .2s;animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 60px rgba(139,92,246,.5)}50%{box-shadow:0 0 80px rgba(139,92,246,.8)}}
+.roll-btn::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid transparent;background:conic-gradient(from 0deg,#8b5cf6,#22d3ee,#8b5cf6) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.roll-btn:active:not(:disabled){transform:scale(.96)}
+.roll-btn:disabled{opacity:.6;cursor:not-allowed;animation:none}
+.roll-btn small{display:block;font-size:9px;letter-spacing:1px;opacity:.7;margin-top:4px}
+.card{width:190px;height:275px;border-radius:16px;background:var(--card2);border:2px solid var(--border);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card.large{width:220px;height:320px}
+.card-art{flex:1;position:relative;overflow:hidden;background:#000}
+.card-art .art-layer{position:absolute;inset:0}
+.card-art .art-pattern{position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay}
+.card-art .art-symbol{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;filter:drop-shadow(0 0 20px rgba(255,255,255,.4));z-index:2}
+.card-art .art-shine{position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%)}
+.card-info{padding:7px 9px;background:linear-gradient(180deg,rgba(20,20,31,.95),var(--card2));border-top:1px solid var(--border);min-height:76px;display:flex;flex-direction:column;justify-content:center}
+.card-name{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.large .card-name{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card-cat{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:4px;gap:3px}
+.rarity-pill{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.08)}
+.rarity-pill.c{color:var(--common)}.rarity-pill.u{color:var(--uncommon)}.rarity-pill.r{color:var(--rare)}.rarity-pill.e{color:var(--epic)}.rarity-pill.l{color:var(--legendary)}.rarity-pill.m{color:var(--mythic)}.rarity-pill.d{color:var(--divine)}.rarity-pill.t{color:var(--transcendent)}.rarity-pill.a{color:var(--absolute)}
+.card-chance{font-size:8px;color:var(--muted);font-weight:600}
+.card.border-rarity-common{border-color:var(--common)}
+.card.border-rarity-uncommon{border-color:var(--uncommon);box-shadow:0 0 20px rgba(74,222,128,.25)}
+.card.border-rarity-rare{border-color:var(--rare);box-shadow:0 0 25px rgba(96,165,250,.35)}
+.card.border-rarity-epic{border-color:var(--epic);box-shadow:0 0 30px rgba(167,139,250,.4)}
+.card.border-rarity-legendary{border-color:var(--legendary);box-shadow:0 0 35px rgba(251,191,36,.5)}
+.card.border-rarity-mythic{border-color:var(--mythic);box-shadow:0 0 40px rgba(244,114,182,.6)}
+.card.border-rarity-divine{border-color:var(--divine);box-shadow:0 0 50px rgba(253,224,71,.7)}
+.card.border-rarity-transcendent{border-color:var(--transcendent);box-shadow:0 0 60px rgba(34,211,238,.8)}
+.card.border-rarity-absolute{border-color:var(--absolute);box-shadow:0 0 70px rgba(255,0,255,.9);animation:absGlow 1.2s infinite}
+@keyframes absGlow{0%,100%{box-shadow:0 0 70px rgba(255,0,255,.9)}50%{box-shadow:0 0 100px rgba(255,0,255,1)}}
+.card.locked .card-art .art-layer{filter:grayscale(1) brightness(.2)}
+.card.locked .card-art .art-symbol{opacity:.15}
+.card.locked .card-name{color:var(--muted)}
+.result{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:320px;justify-content:center}
+.result-empty{color:var(--muted);font-size:12px;text-align:center;padding:40px 20px;border:2px dashed var(--border);border-radius:16px;max-width:220px}
+.result-desc{font-size:10px;color:var(--muted);text-align:center;max-width:220px}
+.quest-header{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.quest-header h2{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.quest-header p{font-size:10px;color:var(--muted)}
+.quest-timer{font-family:'Courier New',monospace;font-size:18px;font-weight:800;color:var(--accent2);letter-spacing:2px;background:rgba(34,211,238,.08);padding:6px 12px;border-radius:10px;border:1px solid rgba(34,211,238,.25)}
+.quest-timer.urgent{color:#f87171;border-color:rgba(248,113,113,.4)}
+.quests-grid{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:700px){.quests-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1000px){.quests-grid{grid-template-columns:repeat(3,1fr)}}
+.quest-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.quest-card.common{border-color:rgba(156,163,175,.4)}
+.quest-card.uncommon{border-color:rgba(74,222,128,.5)}
+.quest-card.rare{border-color:rgba(96,165,250,.6);box-shadow:0 0 25px rgba(96,165,250,.25)}
+.quest-card.epic{border-color:rgba(167,139,250,.7);box-shadow:0 0 30px rgba(167,139,250,.35)}
+.quest-card.legendary{border-color:rgba(251,191,36,.8);box-shadow:0 0 35px rgba(251,191,36,.45)}
+.quest-card.mythic{border-color:rgba(244,114,182,.9);box-shadow:0 0 40px rgba(244,114,182,.55)}
+.quest-rarity{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);width:fit-content}
+.quest-rarity.common{color:var(--common)}.quest-rarity.uncommon{color:var(--uncommon)}.quest-rarity.rare{color:var(--rare)}.quest-rarity.epic{color:var(--epic)}.quest-rarity.legendary{color:var(--legendary)}.quest-rarity.mythic{color:var(--mythic)}
+.quest-obj{font-size:13px;font-weight:700;line-height:1.3;min-height:34px}
+.quest-progress{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:600}
+.quest-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:4px}
+.quest-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s;border-radius:3px}
+.quest-reward{display:flex;gap:8px;font-size:11px;font-weight:800}
+.quest-reward .r-luck{color:var(--luck)}
+.quest-reward .r-money{color:var(--money)}
+.quest-status{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;padding:7px;border-radius:8px;background:rgba(255,255,255,.04);color:var(--muted)}
+.quest-status.completed{color:var(--luck);background:rgba(74,222,128,.12);animation:completePulse 1.5s infinite}
+@keyframes completePulse{0%,100%{background:rgba(74,222,128,.12)}50%{background:rgba(74,222,128,.25)}}
+.quest-status.claimed{opacity:.5}
+.claim-btn{background:linear-gradient(135deg,var(--luck),#22c55e);border:none;color:#000;padding:9px;border-radius:8px;font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;font-family:inherit}
+.index-tools{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap}
+.search-box{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none}
+.filter-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.load-more{width:100%;padding:12px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px}
+.progress-bar{height:6px;background:var(--card);border-radius:3px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)}
+.progress-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#22d3ee);transition:width .5s;border-radius:2px}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.shop-card{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.shop-card .art{width:100%;aspect-ratio:1/1.3;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden}
+.shop-card .name{font-size:10px;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-card .rar{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.shop-card .price{font-size:13px;font-weight:900;color:var(--money);margin:6px 0}
+.buy-btn{width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:#fff;padding:8px;border-radius:8px;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.buy-btn:disabled{opacity:.4;cursor:not-allowed;background:#444}
+.luck-pack{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px}
+.luck-pack-info{display:flex;flex-direction:column;gap:2px}
+.luck-pack-name{font-size:12px;font-weight:800;color:var(--luck)}
+.luck-pack-price{font-size:10px;color:var(--money);font-weight:700}
+.limited-pack{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(239,68,68,.15));border:2px solid rgba(251,191,36,.5);border-radius:16px;padding:20px;text-align:center;position:relative;overflow:hidden}
+.limited-pack::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(251,191,36,.2),transparent 70%);pointer-events:none;animation:limitedPulse 2s infinite}
+@keyframes limitedPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.limited-pack .fire{font-size:48px;margin-bottom:6px;animation:fireShake 1.5s infinite}
+@keyframes fireShake{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.1)}}
+.limited-pack .l-title{font-size:18px;font-weight:900;letter-spacing:3px;color:#fbbf24;text-shadow:0 0 20px rgba(251,191,36,.7)}
+.limited-pack .l-range{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600}
+.limited-pack .l-price{font-size:20px;font-weight:900;color:var(--money);margin:12px 0}
+.limited-pack .l-btn{background:linear-gradient(135deg,#fbbf24,#ef4444);border:none;color:#000;padding:14px 28px;border-radius:12px;font-weight:900;font-size:14px;letter-spacing:2px;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(251,191,36,.4);transition:transform .2s}
+.limited-pack .l-btn:active{transform:scale(.96)}
+.limited-pack .l-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* LEADERBOARD */
+.lb-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 12px;overflow:hidden;position:relative}
+.lb-section::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);opacity:.6}
+.lb-main-title{font-size:14px;font-weight:900;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-bottom:12px;background:linear-gradient(135deg,#fbbf24,#f472b6,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.lb-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-left:6px;animation:livePulse 1.5s infinite;vertical-align:middle}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.7)}50%{opacity:.7;box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+.lb-columns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lb-col{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:12px;padding:8px 6px;min-height:180px}
+.lb-col-header{font-size:10px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;text-align:center;padding:6px 4px;border-radius:8px;margin-bottom:6px;background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(34,211,238,.12));border:1px solid rgba(139,92,246,.25)}
+.lb-col-header.roll{color:var(--money)}
+.lb-col-header.rarity{color:var(--accent2)}
+.lb-item{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:8px;margin-bottom:3px;background:rgba(255,255,255,.02);transition:all .4s;border:1px solid transparent}
+.lb-item.highlight{animation:lbHighlight 1.5s ease}
+@keyframes lbHighlight{0%{background:rgba(139,92,246,.5);transform:scale(1.05)}100%{background:rgba(255,255,255,.02);transform:scale(1)}}
+.lb-item.rank-1{background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(251,191,36,.05));border-color:rgba(251,191,36,.4);box-shadow:0 0 12px rgba(251,191,36,.15)}
+.lb-item.rank-2{background:linear-gradient(135deg,rgba(203,213,225,.15),rgba(203,213,225,.03));border-color:rgba(203,213,225,.35)}
+.lb-item.rank-3{background:linear-gradient(135deg,rgba(217,119,6,.15),rgba(217,119,6,.03));border-color:rgba(217,119,6,.4)}
+.lb-medal{font-size:14px;min-width:22px;text-align:center;font-weight:900}
+.lb-medal.num{color:var(--muted);font-size:11px}
+.lb-content{flex:1;min-width:0;overflow:hidden}
+.lb-name{font-size:11px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-stat{font-size:9px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.lb-stat.rar{color:var(--accent2);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.lb-stat.rar-1{color:var(--absolute)}
+.lb-stat.rar-2{color:var(--transcendent)}
+.lb-stat.rar-3{color:var(--divine)}
+.lb-stat.rar-4{color:var(--mythic)}
+.lb-empty{font-size:10px;color:var(--muted);text-align:center;padding:20px 6px;font-style:italic;opacity:.6}
+.lb-loading{font-size:10px;color:var(--muted);text-align:center;padding:20px 6px}
+
+/* OVERLAYS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:1000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;backdrop-filter:blur(10px)}
+.overlay.active{display:flex}
+.overlay.flash{animation:flash .3s}
+@keyframes flash{0%,100%{background:rgba(0,0,0,.95)}50%{background:rgba(139,92,246,.3)}}
+.overlay.shake{animation:shake .5s}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-8px,4px)}40%{transform:translate(8px,-4px)}60%{transform:translate(-6px,-2px)}80%{transform:translate(6px,2px)}}
+.spinner-area{width:240px;height:360px;position:relative;perspective:1000px}
+.spinner-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.spinner-card .mini-art{width:180px;height:250px;border-radius:16px;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:60px;box-shadow:0 0 40px currentColor}
+.spinner-card .mini-name{margin-top:12px;font-size:15px;font-weight:800;text-align:center;max-width:220px}
+.spinner-card .mini-rar{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-top:3px}
+.reveal-card{animation:revealIn .9s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes revealIn{0%{transform:scale(.3) rotateY(180deg);opacity:0}60%{transform:scale(1.1) rotateY(0)}100%{transform:scale(1);opacity:1}}
+.absolute-text{position:absolute;top:8%;left:0;right:0;text-align:center;font-size:24px;font-weight:900;letter-spacing:8px;color:var(--absolute);text-shadow:0 0 30px var(--absolute);animation:absFade 2.5s ease;pointer-events:none}
+@keyframes absFade{0%{opacity:0;transform:scale(.5)}30%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.pack-shake{animation:packShake 1.5s ease}
+@keyframes packShake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-6px,2px) rotate(-3deg)}20%{transform:translate(6px,-2px) rotate(3deg)}30%{transform:translate(-8px,4px) rotate(-4deg)}40%{transform:translate(8px,-4px) rotate(4deg)}50%{transform:translate(-6px,2px) rotate(-3deg)}60%{transform:translate(6px,-2px) rotate(3deg)}70%{transform:translate(-4px,2px) rotate(-2deg)}80%{transform:translate(4px,-2px) rotate(2deg)}90%{transform:translate(-2px,1px) rotate(-1deg)}}
+.particles{position:fixed;inset:0;pointer-events:none;z-index:1001}
+.particle{position:absolute;width:6px;height:6px;border-radius:50%;animation:particleFly 1.5s ease-out forwards}
+@keyframes particleFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--px),var(--py)) scale(0);opacity:0}}
+.stats-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px}
+.stats-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:700;margin-bottom:8px}
+.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px}
+.stat-row:last-child{border-bottom:none}
+.stat-row b{color:var(--accent2);font-weight:800}
+.auth-modal{position:fixed;inset:0;background:rgba(0,0,0,.97);backdrop-filter:blur(12px);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.auth-modal.show{display:flex}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 22px;max-width:380px;width:100%}
+.auth-brand{font-size:22px;font-weight:800;text-align:center;margin-bottom:8px;background:linear-gradient(135deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+.auth-sub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:18px}
+.auth-box label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:10px 0 5px;font-weight:700}
+.auth-box input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.auth-box input:focus{border-color:var(--accent)}
+.auth-btn{width:100%;margin-top:16px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:9px;padding:13px;font-weight:800;font-size:13px;letter-spacing:1.5px;cursor:pointer;font-family:inherit;text-transform:uppercase}
+.auth-btn:active{transform:scale(.97)}
+.auth-btn:disabled{opacity:.5}
+.auth-switch{text-align:center;font-size:11px;color:var(--muted);margin-top:14px}
+.auth-switch a{color:var(--accent2);cursor:pointer;font-weight:700}
+.auth-error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:9px 12px;border-radius:9px;font-size:11px;margin-bottom:10px;display:none}
+.auth-error.show{display:block}
+.toast-container{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:6px;pointer-events:none;width:calc(100% - 24px);max-width:380px}
+.toast{background:linear-gradient(135deg,rgba(139,92,246,.95),rgba(34,211,238,.95));color:#fff;padding:12px 16px;border-radius:12px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(139,92,246,.5);animation:toastIn .4s cubic-bezier(.2,.9,.3,1.2);border:1px solid rgba(255,255,255,.2)}
+.toast.rare{background:linear-gradient(135deg,rgba(251,191,36,.95),rgba(244,114,182,.95))}
+@keyframes toastIn{from{opacity:0;transform:translateY(-20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+.luck-float{position:fixed;top:60px;right:16px;background:linear-gradient(135deg,var(--luck),#22c55e);color:#000;font-weight:900;padding:10px 16px;border-radius:10px;font-size:14px;z-index:2000;box-shadow:0 8px 24px rgba(74,222,128,.5);animation:luckFloat 1.8s ease forwards;pointer-events:none}
+@keyframes luckFloat{0%{opacity:0;transform:translateY(20px) scale(.8)}20%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-20px) scale(1)}}
+.hidden{display:none!important}
+@media(max-width:400px){
+  .lb-name{font-size:10px}
+  .lb-stat{font-size:8px}
+  .lb-medal{font-size:12px;min-width:18px}
+  .lb-col{padding:6px 4px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="brand">POWER ROLLING</div>
+      <small>Cloud Edition · 1,250 Unique Powers</small>
+    </div>
+    <div class="header-right">
+      <div class="chip admin hidden" id="adminChip">👑 ADMIN</div>
+      <div class="chip luck" id="luckChip">🍀 +0</div>
+      <div class="chip money" id="moneyChip">💰 0</div>
+      <div class="chip" id="userChip" style="cursor:pointer">👤 —</div>
+      <button class="icon-btn" id="muteBtn">🔊</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="home">🎲 ROLL</button>
+    <button class="tab" data-tab="quest">📜 QUEST <span class="tab-badge" id="questBadge" style="display:none">0</span></button>
+    <button class="tab" data-tab="index">📖 INDEX <span id="indexCount"></span></button>
+    <button class="tab" data-tab="shop">🛒 SHOP</button>
+    <button class="tab" data-tab="lb">🏆 RANK <span class="lb-live-dot"></span></button>
+  </div>
+
+  <section class="pane active" id="pane-home">
+    <div class="home-stats">
+      <div class="stat"><div class="stat-v" id="sRolls">0</div><div class="stat-l">Rolls</div></div>
+      <div class="stat"><div class="stat-v" id="sFound">0</div><div class="stat-l">Found</div></div>
+      <div class="stat"><div class="stat-v luck" id="sLuck">+0</div><div class="stat-l">Luck</div></div>
+      <div class="stat"><div class="stat-v money" id="sMoney">0</div><div class="stat-l">Money</div></div>
+    </div>
+    <div class="roll-area">
+      <button class="roll-btn" id="rollBtn">ROLL<small>TAP TO ROLL</small></button>
+    </div>
+    <div class="result" id="resultArea">
+      <div class="result-empty" id="resultEmpty">Tekan ROLL untuk memulai ✨</div>
+      <div id="resultCard" class="hidden"></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-quest">
+    <div class="quest-header">
+      <div><h2>📜 Active Quests</h2><p>5 quest baru tiap 15 menit</p></div>
+      <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);text-align:right;margin-bottom:2px">Next Reset</div><div class="quest-timer" id="questTimer">15:00</div></div>
+    </div>
+    <div class="quests-grid" id="questsGrid"></div>
+    <div class="stats-panel">
+      <div class="stats-title">Quest Stats</div>
+      <div class="stat-row"><span>Completed</span><b id="qsDone">0</b></div>
+      <div class="stat-row"><span>Total Luck Earned</span><b id="qsLuck">+0</b></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-index">
+    <div class="stats-panel" style="margin-top:0;margin-bottom:10px">
+      <div class="stats-title">POWER INDEX · <span id="idxFound">0</span> / 1250</div>
+      <div class="progress-bar"><div class="progress-fill" id="idxProgress"></div></div>
+    </div>
+    <div class="index-tools">
+      <input type="text" class="search-box" id="searchBox" placeholder="🔍 Cari power...">
+      <select class="filter-btn" id="filterRar"><option value="">All Rarities</option></select>
+      <button class="filter-btn" id="hideLockedBtn">Hide Locked</button>
+    </div>
+    <div class="index-grid" id="indexGrid"></div>
+    <button class="load-more" id="loadMoreBtn">Load More</button>
+  </section>
+
+  <section class="pane" id="pane-shop">
+    <div class="stats-panel" style="margin-top:0">
+      <div class="stats-title">🔥 LIMITED CARD</div>
+      <div class="limited-pack">
+        <div class="fire">🔥</div>
+        <div class="l-title">LIMITED CARD PACK</div>
+        <div class="l-range">1 in 500 — 1 in 10,000</div>
+        <div class="l-price">💰 1,500</div>
+        <button class="l-btn" id="openPackBtn">OPEN PACK</button>
+      </div>
+    </div>
+    <div class="stats-panel">
+      <div class="stats-title">🍀 Luck Boosts</div>
+      <div id="luckPacks"></div>
+    </div>
+    <div class="stats-panel">
+      <div class="stats-title">🎴 Power Cards · <span id="shopTimer">05:00</span></div>
+      <div class="shop-grid" id="shopGrid"></div>
+      <button class="load-more" id="refreshShopBtn" style="margin-top:8px">🔄 REFRESH SHOP</button>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-lb">
+    <div class="lb-section">
+      <div class="lb-main-title">🏆 LEADERBOARD <span class="lb-live-dot"></span></div>
+      <div class="lb-columns">
+        <div class="lb-col">
+          <div class="lb-col-header roll">🏆 TOP ROLL</div>
+          <div id="lbRolls"><div class="lb-loading">Loading...</div></div>
+        </div>
+        <div class="lb-col">
+          <div class="lb-col-header rarity">💎 TOP RARITY</div>
+          <div id="lbRarity"><div class="lb-loading">Loading...</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="stats-panel">
+      <div class="stats-title">Ranking Info</div>
+      <div class="stat-row"><span>Top Roll</span><b>Total rolls terbanyak</b></div>
+      <div class="stat-row"><span>Top Rarity</span><b>Power paling langka</b></div>
+      <div class="stat-row"><span>Tie-breaker</span><b>Total rolls</b></div>
+      <div class="stat-row"><span>Update</span><b>🔴 Live</b></div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="rollOverlay"><div class="spinner-area" id="spinnerArea"></div></div>
+<div class="particles" id="particles"></div>
+
+<div class="auth-modal" id="authModal">
+  <div class="auth-box">
+    <div class="auth-brand">POWER ROLLING</div>
+    <div class="auth-sub">Cloud Edition · Login untuk sync progress</div>
+    <div class="auth-error" id="authError"></div>
+    <div id="loginForm">
+      <label>Username</label>
+      <input type="text" id="loginUser" autocomplete="username" maxlength="20">
+      <label>Password</label>
+      <input type="password" id="loginPass" autocomplete="current-password" maxlength="64">
+      <button class="auth-btn" id="loginBtn">LOGIN</button>
+      <div class="auth-switch">Belum punya akun? <a id="showSignup">Buat Akun</a></div>
+    </div>
+    <div id="signupForm" style="display:none">
+      <label>Username</label>
+      <input type="text" id="signupUser" maxlength="20" placeholder="3-20 huruf/angka/_">
+      <label>Password</label>
+      <input type="password" id="signupPass" maxlength="64" placeholder="min 8 karakter">
+      <label>Confirm Password</label>
+      <input type="password" id="signupPass2" maxlength="64">
+      <button class="auth-btn" id="signupBtn">CREATE ACCOUNT</button>
+      <div class="auth-switch">Sudah punya akun? <a id="showLogin">Login</a></div>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://hrijffzwkrmxwreznaqd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_wZlLFlvWCIuuOha0iUg67g_Pfr2Opzp';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'pr_auth' }
+});
+
+// ══════════════════════════════════════════════════════
+// CARD GENERATION (sama seperti sebelumnya — dengan dedup)
+// ══════════════════════════════════════════════════════
+function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=seed;t=t+Math.imul(t^t>>>15,t|1)^t;t=t^t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+const CARD_SEED = 0xC0FFEE;
+
+const CATEGORIES=[
+{id:'elemental',name:'Elemental',hue:200,symbol:'🌊',pattern:'repeating-linear-gradient(45deg,transparent 0 8px,rgba(255,255,255,.06) 8px 9px)'},
+{id:'magic',name:'Magic',hue:280,symbol:'✦',pattern:'radial-gradient(circle,rgba(255,255,255,.14) 1px,transparent 1.5px)'},
+{id:'spiritual',name:'Spiritual',hue:170,symbol:'☯',pattern:'repeating-radial-gradient(circle at center,transparent 0 12px,rgba(255,255,255,.05) 12px 13px)'},
+{id:'logic',name:'Logic',hue:220,symbol:'◇',pattern:'linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px)'},
+{id:'psychic',name:'Psychic',hue:310,symbol:'◉',pattern:'repeating-conic-gradient(from 0deg,transparent 0 20deg,rgba(255,255,255,.05) 20deg 40deg)'},
+{id:'technology',name:'Technology',hue:190,symbol:'⚡',pattern:'linear-gradient(0deg,rgba(255,255,255,.06) 1px,transparent 1px)'},
+{id:'cosmic',name:'Cosmic',hue:260,symbol:'✧',pattern:'radial-gradient(circle at 20% 30%,rgba(255,255,255,.35) 1px,transparent 1px)'},
+{id:'divine',name:'Divine',hue:50,symbol:'☀',pattern:'repeating-conic-gradient(from 0deg,rgba(255,255,255,.1) 0deg 5deg,transparent 5deg 15deg)'},
+{id:'shadow',name:'Shadow',hue:250,symbol:'◈',pattern:'radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.1),transparent 60%)'},
+{id:'nature',name:'Nature',hue:130,symbol:'❀',pattern:'repeating-linear-gradient(120deg,transparent 0 15px,rgba(255,255,255,.05) 15px 16px)'},
+{id:'time',name:'Time',hue:40,symbol:'⧗',pattern:'repeating-conic-gradient(from 0deg,transparent 0deg 30deg,rgba(255,255,255,.08) 30deg 31deg)'},
+{id:'space',name:'Space',hue:210,symbol:'◌',pattern:'radial-gradient(circle at 50% 50%,rgba(255,255,255,.15) 1px,transparent 2px)'},
+{id:'energy',name:'Energy',hue:20,symbol:'⚡',pattern:'repeating-linear-gradient(-45deg,transparent 0 10px,rgba(255,255,255,.08) 10px 11px)'},
+{id:'reality',name:'Reality',hue:330,symbol:'◐',pattern:'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 4px,transparent 4px 8px)'},
+{id:'unique',name:'Unique',hue:200,symbol:'✺',pattern:'repeating-conic-gradient(from 45deg,rgba(255,255,255,.06) 0deg 30deg,transparent 30deg 60deg)'}];
+
+const PREFIXES={
+elemental:['Water','Fire','Earth','Air','Lightning','Ice','Lava','Storm','Sand','Metal','Wood','Steam','Dust','Magma','Frost','Wind','Thunder','Stone','Ocean','Crystal','Ash','Coral','Obsidian','Jade','Pearl'],
+magic:['Arcane','Mystic','Runic','Enchanted','Ancient','Eldritch','Forgotten','Hidden','Primordial','Celestial','Blood','Hexed','Cursed','Blessed','Infernal','Astral','Fae','Sorcerer','Witch','Rune','Sigil','Ritual','Divination','Oracle','Grimoire'],
+spiritual:['Soul','Spirit','Aura','Chi','Ki','Ethereal','Ghost','Phantom','Wraith','Ancestral','Divine','Holy','Sacred','Mystic','Meditation','Chakra','Anima','Vital','Zen','Mantra','Nirvana','Reincarnation','Karma','Dharma','Ascetic'],
+logic:['Logical','Reasoned','Systematic','Algorithmic','Mathematical','Pattern','Probability','Paradox','Geometric','Universal','Pure','Absolute','Analytical','Causal','Rational','Theorem','Axiom','Syllogism','Calculus','Boolean','Equation','Proof','Inference','Deduction','Formal'],
+psychic:['Mind','Telepath','Psychic','Mental','Cerebral','Thought','Memory','Dream','Telekinetic','Cognitive','Neural','Perception','Insight','Consciousness','Emotion','Will','Psyche','Hypnotic','Telepathic','Astral','Clairvoyant','Precognition','Empathy','Intuition','Vision'],
+technology:['Cyber','Nano','Quantum','Digital','Mechanical','Atomic','Robotic','Techno','Circuit','Data','Binary','Virus','Hacker','Drone','Mech','Prosthetic','Neural','Fusion','Reactor','Android','Matrix','Server','Cryptographic','Analog','Wireless'],
+cosmic:['Star','Galaxy','Nebula','Cosmic','Void','Solar','Lunar','Meteor','Comet','Supernova','Quasar','Pulsar','Stellar','Andromeda','Celestial','Galactic','Orion','Astral','Interstellar','Nebular','Eclipse','Aurora','Cosmos','Infinity','Halo'],
+divine:['Holy','Sacred','Divine','Celestial','Angelic','Seraphic','Heaven','Godly','Sanctified','Blessed','Radiant','Hallowed','Anointed','Enlightened','Grace','Providence','Miracle','Light','Cherub','Archangel','Empyrean','Sublime','Exalted','Transcendent','Immortal'],
+shadow:['Shadow','Dark','Night','Obsidian','Void','Eclipse','Midnight','Gloom','Shade','Wraith','Phantom','Ghost','Abyssal','Twilight','Cryptic','Sinister','Umbral','Black','Nether','Dusk','Raven','Nocturne','Silhouette','Umbra','Styx'],
+nature:['Nature','Forest','Woodland','Verdant','Blooming','Wild','Beast','Druidic','Ancient','Rooted','Thorned','Leaf','Vine','Grove','Moss','Bark','Seed','Fungal','Primeval','Wildwood','Meadow','Blossom','Harvest','Primal','Emerald'],
+time:['Time','Temporal','Chrono','Clock','Hourglass','Eternal','Moment','Paradox','Timeline','Distortion','Rewind','Future','Past','Present','Loop','Era','Epoch','Chronology','Second','Millennium','Infinity','Sand','Tick','Tock','Eon'],
+space:['Space','Dimensional','Interstellar','Portal','Warp','Rift','Wormhole','Galaxy','Universe','Multiverse','Dimension','Hyperspace','Cosmic','Celestial','Astral','Star','Planet','Nebula','Void','Ether','Expanse','Boundless','Infinite','Vacuum','Horizon'],
+energy:['Energy','Plasma','Kinetic','Nuclear','Atomic','Electric','Magnetic','Gravitational','Thermal','Radiant','Fusion','Fission','Wave','Pulse','Bolt','Charged','Volt','Amp','Current','Surge','Impulse','Static','Dynamic','Core','Power'],
+reality:['Reality','Existential','Conceptual','Paradox','Abstract','Metaphysical','Ontological','Truth','Illusion','Dream','Nexus','Alternate','Manifest','Ideal','Real','Unreal','Essence','Being','Substance','Existence','Void','Form','Pattern','Maya','Logos'],
+unique:['Mythic','Legendary','Ancient','Forgotten','Primal','Origin','Primordial','Legend','Myth','Eternal','Infinite','Ultimate','Supreme','Absolute','Genesis','Omega','Alpha','Nexus','Singularity','Ascendant','Transcendent','Divine','Radiant','Void','Eclipse']};
+
+const SUFFIXES=['Manipulation','Control','Mastery','Embodiment','Blessing','Curse','Power','Force','Essence','Aura','Surge','Wave','Call','Art','Way','Pulse','Storm','Whisper','Echo','Dominion','Authority','Sovereignty','Reign','Will','Command'];
+const UNIQUE_MIDDLES=['Prime','Alpha','Beta','Gamma','Delta','Epsilon','Zeta','Eta','Theta','Iota','Kappa','Lambda','Sigma','Omega','Nova','Nexus','Vertex','Echo','Flux','Rift','Core','Edge','Peak','Dawn','Dusk','Ascent','Descent','Cipher','Vector','Prism','Cascade','Spiral','Vortex','Halo','Shroud','Veil','Bloom','Thorn','Spark','Ash','Ember','Tide','Flare','Glare','Shade','Gleam','Ray','Bolt','Frost','Storm'];
+const ROMANS=['II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV'];
+
+const RARITIES=[
+{id:'common',name:'Common',short:'C',minChance:2,maxChance:20,count:400,tier:0,color:'var(--common)'},
+{id:'uncommon',name:'Uncommon',short:'U',minChance:20,maxChance:100,count:300,tier:1,color:'var(--uncommon)'},
+{id:'rare',name:'Rare',short:'R',minChance:100,maxChance:500,count:250,tier:2,color:'var(--rare)'},
+{id:'epic',name:'Epic',short:'E',minChance:500,maxChance:1000,count:150,tier:3,color:'var(--epic)'},
+{id:'legendary',name:'Legendary',short:'L',minChance:1000,maxChance:2500,count:80,tier:4,color:'var(--legendary)'},
+{id:'mythic',name:'Mythic',short:'M',minChance:2500,maxChance:5000,count:40,tier:5,color:'var(--mythic)'},
+{id:'divine',name:'Divine',short:'D',minChance:5000,maxChance:7500,count:15,tier:6,color:'var(--divine)'},
+{id:'transcendent',name:'Transcendent',short:'T',minChance:7500,maxChance:9999,count:10,tier:7,color:'var(--transcendent)'},
+{id:'absolute',name:'Absolute',short:'A',minChance:10000,maxChance:10000,count:5,tier:8,color:'var(--absolute)'}];
+
+const RARITY_LUCK_MULT={0:0.02,1:0.10,2:0.20,3:0.30,4:0.40,5:0.30,6:0.15,7:0.08,8:0.02};
+const VERBS={elemental:'mengendalikan elemen',magic:'memanipulasi sihir',spiritual:'menyelaraskan jiwa',logic:'menganalisis pola',psychic:'membaca pikiran',technology:'menggabungkan teknologi',cosmic:'memanggil galaksi',divine:'menyalurkan cahaya ilahi',shadow:'mengendalikan kegelapan',nature:'memerintah alam',time:'memanipulasi waktu',space:'melipat ruang',energy:'mengendalikan energi',reality:'membengkokkan realitas',unique:'menggabungkan kekuatan unik'};
+
+function generateCards(){
+  const rand=mulberry32(CARD_SEED);
+  const pools={};
+  for(const cat of CATEGORIES){
+    const arr=[];
+    for(const p of PREFIXES[cat.id]) for(const s of SUFFIXES) arr.push({name:`${p} ${s}`,category:cat.id});
+    for(let i=arr.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}
+    pools[cat.id]=arr;
+  }
+  const total=RARITIES.reduce((s,r)=>s+r.count,0);
+  const namePool=[];let ci=0;const catIds=CATEGORIES.map(c=>c.id);
+  while(namePool.length<total&&ci<100000){const catId=catIds[ci%catIds.length];const pool=pools[catId];if(pool.length>0)namePool.push(pool.pop());ci++}
+  for(let i=namePool.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[namePool[i],namePool[j]]=[namePool[j],namePool[i]]}
+  const cards=[];let idx=0;
+  for(const rar of RARITIES){
+    for(let i=0;i<rar.count;i++){
+      if(idx>=namePool.length)break;
+      const{name,category}=namePool[idx];
+      const chance=rar.minChance===rar.maxChance?rar.minChance:Math.floor(rar.minChance+rand()*(rar.maxChance-rar.minChance));
+      const cat=CATEGORIES.find(c=>c.id===category);
+      const first=name.split(' ')[0].toLowerCase();
+      cards.push({id:idx,name,category,catName:cat.name,rarity:rar.id,rarityName:rar.name,rarityTier:rar.tier,chance,color:cat.hue,symbol:cat.symbol,description:`Kekuatan yang ${VERBS[category]} melalui ${first}.`});
+      idx++;
+    }
+  }
+  const usedNames=new Set();
+  for(const card of cards){
+    if(!usedNames.has(card.name)){usedNames.add(card.name);continue}
+    let fixed=false;
+    const parts=card.name.split(' ');
+    for(const mid of UNIQUE_MIDDLES){
+      const cand=parts.length>=2?`${parts[0]} ${mid} ${parts.slice(1).join(' ')}`:`${card.name} ${mid}`;
+      if(!usedNames.has(cand)){card.name=cand;usedNames.add(cand);fixed=true;break}
+    }
+    if(fixed)continue;
+    for(const r of ROMANS){
+      const cand=`${card.name} ${r}`;
+      if(!usedNames.has(cand)){card.name=cand;usedNames.add(cand);fixed=true;break}
+    }
+    if(fixed)continue;
+    let n=2;while(usedNames.has(`${card.name} ${n}`))n++;
+    card.name=`${card.name} ${n}`;usedNames.add(card.name);
+  }
+  cards.forEach((c,i)=>{c.uid='power_'+String(i+1).padStart(4,'0')});
+  cards.forEach(c=>c.weight=1/c.chance);
+  const totalW=cards.reduce((s,c)=>s+c.weight,0);
+  cards.forEach(c=>c.probability=c.weight/totalW);
+  const names=new Set(cards.map(c=>c.name));
+  console.log(`[CardGen] ${cards.length} cards | ${names.size} unique names`);
+  return cards;
+}
+const CARDS = generateCards();
+const TOTAL_CARDS = CARDS.length;
+const CAT_HUE = {}; CATEGORIES.forEach(c=>CAT_HUE[c.id]=c.hue);
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let state = {
+  user:null, profile:null, role:'user',
+  stats:{total_rolls:0,luck:0,money:0,discovered_count:0,highest_power_chance:0,highest_power_id:null,luck_earned:0,quests_done:0},
+  discovered:{}, quests:[], questResetAt:0, muted:false,
+  shopRefreshAt:0, shopItems:[], rolling:false,
+  lbPrevRolls:{}, lbPrevRarity:{},
+};
+
+// ══════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════
+const authModal = document.getElementById('authModal');
+const authError = document.getElementById('authError');
+document.getElementById('showSignup').onclick=()=>{document.getElementById('loginForm').style.display='none';document.getElementById('signupForm').style.display='block';authError.classList.remove('show')};
+document.getElementById('showLogin').onclick=()=>{document.getElementById('signupForm').style.display='none';document.getElementById('loginForm').style.display='block';authError.classList.remove('show')};
+function syntheticEmail(u){ return u.toLowerCase() + '@power-rolling.local'; }
+function showAuthErr(msg){authError.textContent=msg;authError.classList.add('show')}
+
+document.getElementById('signupBtn').onclick = async ()=>{
+  const u=document.getElementById('signupUser').value.trim();
+  const p=document.getElementById('signupPass').value;
+  const p2=document.getElementById('signupPass2').value;
+  if(!/^[a-zA-Z0-9_]{3,20}$/.test(u)){showAuthErr('Username 3-20 karakter');return}
+  if(p.length<8){showAuthErr('Password minimal 8 karakter');return}
+  if(p.toLowerCase()===u.toLowerCase()){showAuthErr('Password tidak boleh sama dengan username');return}
+  if(p!==p2){showAuthErr('Password konfirmasi tidak cocok');return}
+  const btn=document.getElementById('signupBtn');btn.disabled=true;btn.textContent='CREATING...';
+  try{
+    const { data: existing } = await sb.from('profiles').select('id').eq('username_lower', u.toLowerCase()).maybeSingle();
+    if(existing) throw new Error('Username sudah digunakan');
+    const { data: auth, error } = await sb.auth.signUp({ email: syntheticEmail(u), password: p });
+    if(error) throw error;
+    if(!auth.user) throw new Error('Gagal buat akun');
+    const { error: pe } = await sb.from('profiles').insert({ id: auth.user.id, username: u, username_lower: u.toLowerCase() });
+    if(pe) throw pe;
+    await sb.from('game_stats').insert({ user_id: auth.user.id });
+    await sb.from('user_settings').insert({ user_id: auth.user.id });
+    if(!auth.session){
+      const { data: si, error: le } = await sb.auth.signInWithPassword({ email: syntheticEmail(u), password: p });
+      if(le) throw le;
+      if(!si.session) throw new Error('Akun dibuat. Silakan login.');
+    }
+    await onLoginSuccess();
+  }catch(e){showAuthErr(e.message||'Gagal signup')}
+  btn.disabled=false;btn.textContent='CREATE ACCOUNT';
+};
+
+document.getElementById('loginBtn').onclick = async ()=>{
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  if(!u||!p){showAuthErr('Isi username dan password');return}
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='LOGGING IN...';
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email: syntheticEmail(u), password: p });
+    if(error||!data.session) throw new Error('Username atau password salah');
+    await onLoginSuccess();
+  }catch(e){showAuthErr(e.message||'Login gagal')}
+  btn.disabled=false;btn.textContent='LOGIN';
+};
+
+async function onLoginSuccess(){
+  authModal.classList.remove('show');
+  authError.classList.remove('show');
+  await loadCloudState();
+  updateUI();
+  subscribeRealtime();
+  subscribeLeaderboard();
+  startQuestTimer();
+  refreshShopIfNeeded();
+  loadLeaderboard();
+}
+
+// ══════════════════════════════════════════════════════
+// LOAD CLOUD
+// ══════════════════════════════════════════════════════
+async function loadCloudState(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ authModal.classList.add('show'); return false; }
+  state.user = { id: session.user.id };
+  const [prof, stats, disc, quest, settings] = await Promise.all([
+    sb.from('profiles').select('username, role').eq('id', session.user.id).single(),
+    sb.from('game_stats').select('*').eq('user_id', session.user.id).single(),
+    sb.from('discovered_powers').select('power_id').eq('user_id', session.user.id),
+    sb.from('quest_state').select('*').eq('user_id', session.user.id).maybeSingle(),
+    sb.from('user_settings').select('*').eq('user_id', session.user.id).maybeSingle(),
+  ]);
+  state.profile = prof.data || { username: 'Unknown', role: 'user' };
+  state.role = state.profile.role || 'user';
+  if(stats.data) state.stats = stats.data;
+  state.discovered = {};
+  (disc.data||[]).forEach(r => state.discovered[r.power_id] = true);
+  if(quest.data){ state.quests = quest.data.quests || []; state.questResetAt = new Date(quest.data.reset_at).getTime(); }
+  else { state.quests = []; state.questResetAt = 0; }
+  state.muted = settings.data ? !settings.data.sound_enabled : false;
+  checkQuestReset();
+  return true;
+}
+
+// ══════════════════════════════════════════════════════
+// QUEST — 15 menit, 5 quest
+// ══════════════════════════════════════════════════════
+const QUEST_INTERVAL = 15*60*1000;
+const QUEST_COUNT = 5;
+const QUEST_RARITY_WEIGHTS = [{id:'common',weight:35},{id:'uncommon',weight:28},{id:'rare',weight:20},{id:'epic',weight:10},{id:'legendary',weight:5},{id:'mythic',weight:2}];
+const QUEST_RARITY_DEF = {common:{name:'Common'},uncommon:{name:'Uncommon'},rare:{name:'Rare'},epic:{name:'Epic'},legendary:{name:'Legendary'},mythic:{name:'Mythic'}};
+const QUEST_POOL = {
+  common:[{type:'rolls',minT:3,maxT:8,luck:[1,2],money:[10,25]},{type:'discover',minT:1,maxT:1,luck:[1,2],money:[10,25]}],
+  uncommon:[{type:'rolls',minT:10,maxT:18,luck:[2,4],money:[20,50]},{type:'discover',minT:2,maxT:3,luck:[2,4],money:[20,50]},{type:'uncommon_plus',minT:1,maxT:2,luck:[2,4],money:[20,50]}],
+  rare:[{type:'rolls',minT:20,maxT:30,luck:[4,7],money:[40,100]},{type:'discover',minT:3,maxT:5,luck:[4,7],money:[40,100]},{type:'rare_plus',minT:1,maxT:2,luck:[4,7],money:[40,100]},{type:'category',minT:1,maxT:1,luck:[4,7],money:[40,100]}],
+  epic:[{type:'rolls',minT:30,maxT:45,luck:[7,12],money:[75,175]},{type:'discover',minT:4,maxT:6,luck:[7,12],money:[75,175]},{type:'rare_plus',minT:2,maxT:3,luck:[7,12],money:[75,175]},{type:'epic_plus',minT:1,maxT:1,luck:[7,12],money:[75,175]}],
+  legendary:[{type:'rolls',minT:50,maxT:70,luck:[12,18],money:[150,350]},{type:'discover',minT:6,maxT:9,luck:[12,18],money:[150,350]},{type:'epic_plus',minT:1,maxT:2,luck:[12,18],money:[150,350]}],
+  mythic:[{type:'rolls',minT:80,maxT:120,luck:[20,30],money:[300,750]},{type:'discover',minT:8,maxT:12,luck:[20,30],money:[300,750]},{type:'legendary_plus',minT:1,maxT:1,luck:[20,30],money:[300,750]}],
+};
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pickQuestRarity(){const t=QUEST_RARITY_WEIGHTS.reduce((s,r)=>s+r.weight,0);let roll=Math.random()*t;for(const r of QUEST_RARITY_WEIGHTS){roll-=r.weight;if(roll<=0)return r.id}return 'common'}
+function buildQuest(rar){
+  const pool=QUEST_POOL[rar];const t=pool[Math.floor(Math.random()*pool.length)];
+  const target=randInt(t.minT,t.maxT);const luck=randInt(t.luck[0],t.luck[1]);const money=randInt(t.money[0],t.money[1]);
+  const q={id:'q_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),rarity:rar,type:t.type,target,luck,money,current:0,completed:false,claimed:false,meta:{}};
+  if(t.type==='category'){const c=CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];q.meta.categoryId=c.id;q.meta.categoryName=c.name}
+  return q;
+}
+function generateQuests(){const qs=[];for(let i=0;i<QUEST_COUNT;i++)qs.push(buildQuest(pickQuestRarity()));return qs}
+function checkQuestReset(){
+  const now=Date.now();
+  if(state.questResetAt > now + QUEST_INTERVAL){ state.questResetAt = now + QUEST_INTERVAL; }
+  if(!state.quests||state.quests.length===0||!state.questResetAt||now>=state.questResetAt){
+    state.quests=generateQuests();state.questResetAt=now+QUEST_INTERVAL;saveQuestsDebounced();return true;
+  }
+  return false;
+}
+function getTimeLeft(){return Math.max(0,state.questResetAt-Date.now())}
+function fmtTime(ms){const t=Math.floor(ms/1000);const h=Math.floor(t/3600);const m=Math.floor((t%3600)/60);const s=t%60;return h>0?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
+function onQuestProgress(card,isNew){
+  let changed=false;
+  for(const q of state.quests){
+    if(q.claimed||q.completed)continue;
+    let inc=0;
+    switch(q.type){
+      case 'rolls':inc=1;break;
+      case 'discover':if(isNew)inc=1;break;
+      case 'uncommon_plus':if(card.rarityTier>=1)inc=1;break;
+      case 'rare_plus':if(card.rarityTier>=2)inc=1;break;
+      case 'epic_plus':if(card.rarityTier>=3)inc=1;break;
+      case 'legendary_plus':if(card.rarityTier>=4)inc=1;break;
+      case 'category':if(card.category===q.meta.categoryId&&isNew)inc=1;break;
+    }
+    if(inc>0){q.current=Math.min(q.current+inc,q.target);if(q.current>=q.target)q.completed=true;changed=true}
+  }
+  if(changed)saveQuestsDebounced();
+}
+async function claimQuest(qid){
+  const q=state.quests.find(x=>x.id===qid);
+  if(!q||!q.completed||q.claimed)return;
+  q.claimed=true;
+  state.stats.luck=(state.stats.luck||0)+q.luck;
+  state.stats.luck_earned=(state.stats.luck_earned||0)+q.luck;
+  state.stats.money=(state.stats.money||0)+q.money;
+  state.stats.quests_done=(state.stats.quests_done||0)+1;
+  await sb.from('game_stats').update({luck:state.stats.luck,luck_earned:state.stats.luck_earned,money:state.stats.money,quests_done:state.stats.quests_done,updated_at:new Date().toISOString()}).eq('user_id',state.user.id);
+  saveQuestsDebounced();
+  showLuckFloat(q.luck,q.money);
+  beep(600,0.1,'sine',0.08);
+  setTimeout(()=>beep(900,0.15,'sine',0.08),100);
+  updateUI();renderQuests();
+}
+let questSaveTimer=null;
+function saveQuestsDebounced(){
+  if(questSaveTimer)clearTimeout(questSaveTimer);
+  questSaveTimer=setTimeout(async()=>{
+    if(!state.user)return;
+    await sb.from('quest_state').upsert({user_id:state.user.id,quests:state.quests,reset_at:new Date(state.questResetAt).toISOString(),updated_at:new Date().toISOString()});
+  },800);
+}
+
+// ══════════════════════════════════════════════════════
+// ROLL
+// ══════════════════════════════════════════════════════
+function roll(){
+  const r=Math.random();
+  const luck = state.role === 'admin' ? 100000 : (state.stats.luck||0);
+  let totalW=0;const eff=new Array(CARDS.length);
+  for(let i=0;i<CARDS.length;i++){
+    const c=CARDS[i];const mult=RARITY_LUCK_MULT[c.rarityTier]||0;
+    const bonus=1+(luck/100)*mult;
+    eff[i]=c.weight*bonus;totalW+=eff[i];
+  }
+  const target=r*totalW;let cum=0;
+  for(let i=0;i<CARDS.length;i++){cum+=eff[i];if(cum>=target)return CARDS[i]}
+  return CARDS[CARDS.length-1];
+}
+
+async function performRoll(){
+  if(state.rolling)return;state.rolling=true;
+  const btn=document.getElementById('rollBtn');btn.disabled=true;
+  const finalCard=roll();
+  const overlay=document.getElementById('rollOverlay');
+  overlay.classList.add('active');
+  await animateSpinner();
+  const isNew = !state.discovered[finalCard.id];
+  try{
+    const { data, error } = await sb.rpc('record_roll', {
+      p_power_id: finalCard.id, p_power_name: finalCard.name,
+      p_power_chance: finalCard.chance, p_rarity: finalCard.rarity, p_is_new: isNew
+    });
+    if(error) console.warn('RPC error:',error.message);
+    if(data){
+      state.stats.total_rolls = data.total_rolls;
+      state.stats.discovered_count = data.discovered_count;
+      state.stats.highest_power_chance = data.highest_power_chance;
+      state.stats.highest_power_id = data.highest_power_id;
+    }
+  }catch(e){console.warn(e)}
+  if(isNew) state.discovered[finalCard.id]=true;
+  onQuestProgress(finalCard,isNew);
+  await revealCard(finalCard);
+  overlay.classList.remove('active');
+  btn.disabled=false;state.rolling=false;
+  showResult(finalCard);
+  updateUI();renderQuests();renderIndex();
+}
+
+// ══════════════════════════════════════════════════════
+// LIMITED PACK
+// ══════════════════════════════════════════════════════
+const PACK_PRICE = 1500;
+function rollLimitedPack(){
+  // Filter cards dengan chance 500-10000
+  const pool = CARDS.filter(c => c.chance >= 500 && c.chance <= 10000);
+  const luck = state.role === 'admin' ? 100000 : (state.stats.luck||0);
+  let totalW=0;const eff=new Array(pool.length);
+  for(let i=0;i<pool.length;i++){
+    const c=pool[i];const mult=RARITY_LUCK_MULT[c.rarityTier]||0;
+    const bonus=1+(luck/100)*mult;
+    eff[i]=c.weight*bonus;totalW+=eff[i];
+  }
+  const r=Math.random()*totalW;let cum=0;
+  for(let i=0;i<pool.length;i++){cum+=eff[i];if(cum>=r)return pool[i]}
+  return pool[pool.length-1];
+}
+
+async function openLimitedPack(){
+  if(state.role !== 'admin' && (state.stats.money||0) < PACK_PRICE){
+    showToast('Not enough money');return;
+  }
+  const btn = document.getElementById('openPackBtn');
+  btn.disabled=true;btn.textContent='OPENING...';
+
+  const card = rollLimitedPack();
+  const isNew = !state.discovered[card.id];
+
+  const overlay = document.getElementById('rollOverlay');
+  overlay.classList.add('active');
+  const area = document.getElementById('spinnerArea');
+  area.innerHTML = `<div class="spinner-card"><div class="mini-art pack-shake" style="border-color:#fbbf24;color:#fbbf24;box-shadow:0 0 60px #fbbf24">🔥</div><div class="mini-name">Opening Pack...</div><div class="mini-rar" style="color:#fbbf24">LIMITED</div></div>`;
+  beep(300,0.15,'square',0.08);
+  for(let i=0;i<6;i++){setTimeout(()=>beep(300+i*100,0.08,'square',0.06),i*120)}
+  await new Promise(r=>setTimeout(r,1500));
+
+  try{
+    const { data, error } = await sb.rpc('open_limited_pack', {
+      p_power_id: card.id, p_power_name: card.name,
+      p_power_chance: card.chance, p_rarity: card.rarity,
+      p_is_new: isNew, p_price: PACK_PRICE
+    });
+    if(error) throw error;
+    if(data){
+      state.stats.money = data.new_money;
+      state.stats.discovered_count = data.discovered_count;
+      state.stats.highest_power_chance = data.highest_power_chance;
+      state.stats.highest_power_id = data.highest_power_id;
+    }
+  }catch(e){showToast(e.message||'Gagal buka pack');overlay.classList.remove('active');btn.disabled=false;btn.textContent='OPEN PACK';return}
+
+  if(isNew) state.discovered[card.id]=true;
+  await revealCard(card);
+  overlay.classList.remove('active');
+  btn.disabled=false;btn.textContent='OPEN PACK';
+  showResult(card);
+  updateUI();renderIndex();
+}
+
+// ══════════════════════════════════════════════════════
+// ANIMATIONS
+// ══════════════════════════════════════════════════════
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
+function animateSpinner(){
+  const area=document.getElementById('spinnerArea');
+  area.innerHTML=`<div class="spinner-card"><div class="mini-art" id="spinArt">?</div><div class="mini-name" id="spinName">...</div><div class="mini-rar" id="spinRar">...</div></div>`;
+  const a=document.getElementById('spinArt'),n=document.getElementById('spinName'),r=document.getElementById('spinRar');
+  const dur=1400+Math.random()*400;const start=performance.now();let last=0;
+  return new Promise(resolve=>{
+    function tick(){
+      const t=performance.now()-start;
+      if(t>dur){resolve();return}
+      const prog=t/dur;const interval=40+prog*prog*260;
+      if(t-last>interval){
+        last=t;
+        const rc=CARDS[Math.floor(Math.random()*CARDS.length)];
+        const rar=RARITIES.find(x=>x.id===rc.rarity);
+        const cat=CATEGORIES.find(c=>c.id===rc.category);
+        const h=(CAT_HUE[rc.category]+(Math.random()*60-30)+360)%360;
+        a.textContent=cat.symbol;a.style.color=`hsl(${h},80%,60%)`;a.style.borderColor=`hsl(${h},80%,60%)`;
+        n.textContent=rc.name;n.style.color=rar.color;
+        r.textContent=rar.name;r.style.color=rar.color;
+        beep(200+Math.random()*400,0.02,'square',0.02);
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  });
+}
+async function revealCard(card){
+  const area=document.getElementById('spinnerArea');
+  const rar=RARITIES.find(r=>r.id===card.rarity);
+  const cat=CATEGORIES.find(c=>c.id===card.category);
+  const h=(CAT_HUE[card.category]+(hashStr(card.name)%60-30)+360)%360;
+  const isAbs=card.rarity==='absolute';
+  const isHigh=card.rarityTier>=4;
+  const overlay=document.getElementById('rollOverlay');
+  if(isAbs){overlay.classList.add('shake');document.body.style.background='#000';await new Promise(r=>setTimeout(r,400))}
+  area.innerHTML=`
+    <div class="spinner-card reveal-card">
+      <div class="mini-art" style="color:hsl(${h},90%,65%);border-color:hsl(${h},90%,60%);box-shadow:0 0 60px hsl(${h},90%,60%),0 0 120px hsla(${h},90%,60%,.5)">${cat.symbol}</div>
+      <div class="mini-name" style="color:hsl(${h},90%,70%)">${card.name}</div>
+      <div class="mini-rar" style="color:${rar.color}">${rar.name} · 1 in ${card.chance.toLocaleString()}</div>
+    </div>
+    ${isAbs?'<div class="absolute-text">◆ ABSOLUTE ◆</div>':''}`;
+  playRaritySound(rar.tier);
+  const pCounts=[4,8,14,22,35,50,70,90,130];
+  const pColors={common:'#9ca3af',uncommon:'#4ade80',rare:'#60a5fa',epic:'#a78bfa',legendary:'#fbbf24',mythic:'#f472b6',divine:'#fde047',transcendent:'#22d3ee',absolute:'#ff00ff'};
+  spawnParticles(pCounts[rar.tier]||4,pColors[card.rarity]||'#8b5cf6',1+rar.tier*0.15);
+  if(isHigh){overlay.classList.add('flash');setTimeout(()=>overlay.classList.remove('flash'),320)}
+  await new Promise(r=>setTimeout(r,isAbs?2400:1700));
+  overlay.classList.remove('shake');document.body.style.background='';
+}
+function showResult(card){
+  document.getElementById('resultEmpty').classList.add('hidden');
+  const c=document.getElementById('resultCard');c.classList.remove('hidden');
+  c.innerHTML=`${cardHTML(card,{large:true})}<div class="result-desc">${card.description}</div>`;
+}
+function cardHTML(card,opts={}){
+  const{large=false,locked=false}=opts;
+  const rar=RARITIES.find(r=>r.id===card.rarity);
+  const name=locked?'???':card.name;
+  const cat=CATEGORIES.find(c=>c.id===card.category);
+  const hsh=hashStr(card.name+card.id);
+  const shift=(hsh%60)-30;const x=20+(hsh%60);const y=20+((hsh>>3)%60);
+  const c1=`hsl(${(CAT_HUE[card.category]+shift+360)%360},75%,55%)`;
+  const c2=`hsl(${(CAT_HUE[card.category]+shift+20+360)%360},65%,30%)`;
+  const c3=`hsl(${(CAT_HUE[card.category]+shift-20+360)%360},55%,12%)`;
+  return`<div class="card ${large?'large':''} ${locked?'locked':''} border-rarity-${card.rarity}">
+    <div class="card-art">
+      <div class="art-layer" style="background:radial-gradient(ellipse at ${x}% ${y}%,${c1} 0%,${c2} 45%,${c3} 100%)"></div>
+      <div class="art-pattern" style="background:${cat.pattern};background-size:${20+(hsh%30)}px ${20+(hsh%30)}px"></div>
+      <div class="art-symbol">${cat.symbol}</div>
+      <div class="art-shine"></div>
+    </div>
+    <div class="card-info">
+      <div class="card-name">${name}</div>
+      <div class="card-cat">${card.catName}</div>
+      <div class="card-meta">
+        <span class="rarity-pill ${rar.short.toLowerCase()}">${locked?'???':rar.name}</span>
+        <span class="card-chance">1 in ${card.chance.toLocaleString()}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// UI UPDATE (with admin display)
+// ══════════════════════════════════════════════════════
+function updateUI(){
+  const s=state.stats;
+  const isAdmin = state.role === 'admin';
+  document.getElementById('sRolls').textContent=(s.total_rolls||0).toLocaleString();
+  document.getElementById('sFound').textContent=s.discovered_count||0;
+  document.getElementById('sLuck').textContent = isAdmin ? '100K×' : ('+'+(s.luck||0));
+  document.getElementById('sMoney').textContent = isAdmin ? '∞' : (s.money||0).toLocaleString();
+  document.getElementById('luckChip').textContent = isAdmin ? '🍀 100K×' : ('🍀 +'+(s.luck||0));
+  document.getElementById('moneyChip').textContent = isAdmin ? '💰 ∞' : ('💰 '+(s.money||0).toLocaleString());
+  document.getElementById('userChip').textContent='👤 '+(state.profile?.username||'—');
+  const adminChip=document.getElementById('adminChip');
+  if(isAdmin)adminChip.classList.remove('hidden');else adminChip.classList.add('hidden');
+  document.getElementById('muteBtn').textContent=state.muted?'🔇':'🔊';
+  document.getElementById('idxFound').textContent=Object.keys(state.discovered).length;
+  document.getElementById('indexCount').textContent=`(${Object.keys(state.discovered).length})`;
+  document.getElementById('idxProgress').style.width=(Object.keys(state.discovered).length/TOTAL_CARDS*100)+'%';
+  document.getElementById('qsDone').textContent=s.quests_done||0;
+  document.getElementById('qsLuck').textContent='+'+(s.luck_earned||0);
+  const done=state.quests.filter(q=>q.completed&&!q.claimed).length;
+  const b=document.getElementById('questBadge');
+  if(done>0){b.textContent=done;b.style.display='inline-block'}else{b.style.display='none'}
+}
+
+// ══════════════════════════════════════════════════════
+// QUEST RENDER
+// ══════════════════════════════════════════════════════
+function questText(q){
+  switch(q.type){
+    case 'rolls':return `Perform ${q.target} Rolls`;
+    case 'discover':return `Discover ${q.target} New Power${q.target>1?'s':''}`;
+    case 'uncommon_plus':return `Get ${q.target} Uncommon-or-higher Power${q.target>1?'s':''}`;
+    case 'rare_plus':return `Get ${q.target} Rare-or-higher Power${q.target>1?'s':''}`;
+    case 'epic_plus':return `Get ${q.target} Epic-or-higher Power${q.target>1?'s':''}`;
+    case 'legendary_plus':return `Get ${q.target} Legendary-or-higher Power${q.target>1?'s':''}`;
+    case 'category':return `Discover a ${q.meta.categoryName} Power`;
+  }
+  return 'Unknown';
+}
+function renderQuests(){
+  const grid=document.getElementById('questsGrid');
+  if(!state.quests||state.quests.length===0)return;
+  grid.innerHTML=state.quests.map(q=>{
+    const rd=QUEST_RARITY_DEF[q.rarity];
+    const pct=Math.min(100,(q.current/q.target)*100);
+    let status='';
+    if(q.claimed)status='<div class="quest-status claimed">✓ Claimed</div>';
+    else if(q.completed)status=`<div class="quest-status completed">✓ Completed</div><button class="claim-btn" data-qid="${q.id}">Claim</button>`;
+    else status='<div class="quest-status">In Progress</div>';
+    return`<div class="quest-card ${q.rarity}">
+      <span class="quest-rarity ${q.rarity}">★ ${rd.name} Quest</span>
+      <div class="quest-obj">${questText(q)}</div>
+      <div><div class="quest-progress"><span>Progress</span><span><b>${q.current}</b> / ${q.target}</span></div><div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div></div>
+      <div class="quest-reward"><span class="r-luck">🍀 +${q.luck}</span><span class="r-money">💰 +${q.money}</span></div>
+      ${status}
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.claim-btn').forEach(b=>{b.onclick=()=>claimQuest(b.dataset.qid)});
+}
+
+// ══════════════════════════════════════════════════════
+// INDEX
+// ══════════════════════════════════════════════════════
+let idx={search:'',rar:'',hideLocked:false,shown:30};
+function renderIndex(){
+  const grid=document.getElementById('indexGrid');
+  let arr=CARDS.slice();
+  if(idx.search){const q=idx.search.toLowerCase();arr=arr.filter(c=>c.name.toLowerCase().includes(q)||c.catName.toLowerCase().includes(q))}
+  if(idx.rar)arr=arr.filter(c=>c.rarity===idx.rar);
+  if(idx.hideLocked)arr=arr.filter(c=>state.discovered[c.id]);
+  arr.sort((a,b)=>a.rarityTier-b.rarityTier||a.chance-b.chance);
+  const show=arr.slice(0,idx.shown);
+  grid.innerHTML=show.map(c=>cardHTML(c,{locked:!state.discovered[c.id]})).join('');
+  const lb=document.getElementById('loadMoreBtn');
+  if(idx.shown>=arr.length)lb.classList.add('hidden');
+  else{lb.classList.remove('hidden');lb.textContent=`Load More (${arr.length-idx.shown})`}
+}
+
+// ══════════════════════════════════════════════════════
+// SHOP — 5 menit refresh
+// ══════════════════════════════════════════════════════
+const LUCK_PACKS=[
+  {id:'luck1',name:'Luck Boost I',luck:5,price:100},
+  {id:'luck2',name:'Luck Boost II',luck:10,price:250},
+  {id:'luck3',name:'Luck Boost III',luck:20,price:600},
+];
+const SHOP_REFRESH_MS = 5*60*1000;
+
+function refreshShopIfNeeded(force=false){
+  const now=Date.now();
+  if(!force&&state.shopRefreshAt>now&&state.shopItems.length===3)return;
+  const cands=CARDS.filter(c=>c.rarityTier>=1&&c.rarityTier<=3&&c.chance<3000);
+  const picked=[];const used=new Set();
+  while(picked.length<3&&picked.length<cands.length){
+    const c=cands[Math.floor(Math.random()*cands.length)];
+    if(used.has(c.id))continue;
+    used.add(c.id);picked.push(c);
+  }
+  state.shopItems=picked;state.shopRefreshAt=now+SHOP_REFRESH_MS;
+  renderShop();
+}
+function priceOf(card){
+  if(card.chance<=50)return 150;
+  if(card.chance<=100)return 300;
+  if(card.chance<=250)return 600;
+  if(card.chance<=500)return 1200;
+  if(card.chance<=1000)return 2500;
+  if(card.chance<=2000)return 5000;
+  return 10000;
+}
+function renderShop(){
+  const lp=document.getElementById('luckPacks');
+  lp.innerHTML=LUCK_PACKS.map(p=>`
+    <div class="luck-pack">
+      <div class="luck-pack-info">
+        <span class="luck-pack-name">🍀 ${p.name}</span>
+        <span class="luck-pack-price">💰 ${p.price} · +${p.luck} Luck</span>
+      </div>
+      <button class="buy-btn" data-packid="${p.id}" style="width:auto;padding:8px 16px">BUY</button>
+    </div>
+  `).join('');
+  lp.querySelectorAll('.buy-btn').forEach(b=>{b.onclick=()=>buyLuckPack(b.dataset.packid)});
+  const sg=document.getElementById('shopGrid');
+  sg.innerHTML=state.shopItems.map(c=>{
+    const owned=!!state.discovered[c.id];
+    const price=priceOf(c);
+    const rar=RARITIES.find(r=>r.id===c.rarity);
+    const cat=CATEGORIES.find(x=>x.id===c.category);
+    const hsh=hashStr(c.name+c.id);const shift=(hsh%60)-30;
+    const c1=`hsl(${(CAT_HUE[c.category]+shift+360)%360},75%,55%)`;
+    const c2=`hsl(${(CAT_HUE[c.category]+shift+20+360)%360},65%,30%)`;
+    const c3=`hsl(${(CAT_HUE[c.category]+shift-20+360)%360},55%,12%)`;
+    return`<div class="shop-card">
+      <div class="art" style="background:radial-gradient(ellipse at 50% 40%,${c1} 0%,${c2} 45%,${c3} 100%)">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px">${cat.symbol}</div>
+      </div>
+      <div class="name">${c.name}</div>
+      <div class="rar rarity-pill ${rar.short.toLowerCase()}" style="display:inline-block">${rar.name}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:3px">1 in ${c.chance.toLocaleString()}</div>
+      <div class="price">💰 ${price.toLocaleString()}</div>
+      <button class="buy-btn" data-powerid="${c.id}" ${owned?'disabled':''}>${owned?'OWNED':'BUY'}</button>
+    </div>`;
+  }).join('');
+  sg.querySelectorAll('.buy-btn').forEach(b=>{if(!b.disabled)b.onclick=()=>buyPowerCard(parseInt(b.dataset.powerid))});
+}
+async function buyLuckPack(packId){
+  const pack=LUCK_PACKS.find(p=>p.id===packId);
+  if(!pack)return;
+  if(state.role!=='admin'&&(state.stats.money||0)<pack.price){showToast('Not enough money');return}
+  try{
+    const { data, error } = await sb.rpc('buy_luck_pack',{p_luck:pack.luck,p_price:pack.price});
+    if(error)throw error;
+    state.stats.luck=data.new_luck;
+    state.stats.money=data.new_money;
+    state.stats.luck_earned=(state.stats.luck_earned||0)+pack.luck;
+    showLuckFloat(pack.luck,0);
+    beep(800,0.15,'sine',0.08);
+    updateUI();renderShop();
+  }catch(e){showToast(e.message||'Gagal beli')}
+}
+async function buyPowerCard(powerId){
+  const card=CARDS.find(c=>c.id===powerId);
+  if(!card)return;
+  if(state.discovered[powerId]){showToast('Already discovered');return}
+  const price=priceOf(card);
+  if(state.role!=='admin'&&(state.stats.money||0)<price){showToast('Not enough money');return}
+  try{
+    const { data, error } = await sb.rpc('buy_power_card',{p_power_id:powerId,p_price:price});
+    if(error)throw error;
+    state.stats.money=data.new_money;
+    state.stats.discovered_count=data.discovered_count;
+    state.discovered[powerId]=true;
+    showToast(`🎴 Bought ${card.name}!`);
+    beep(600,0.15,'sine',0.08);
+    updateUI();renderShop();renderIndex();
+  }catch(e){showToast(e.message||'Gagal beli')}
+}
+
+// ══════════════════════════════════════════════════════
+// LEADERBOARD — LIVE
+// ══════════════════════════════════════════════════════
+function medalFor(rank){
+  if(rank===1) return {icon:'🥇',cls:'rank-1',numCls:''};
+  if(rank===2) return {icon:'🥈',cls:'rank-2',numCls:''};
+  if(rank===3) return {icon:'🥉',cls:'rank-3',numCls:''};
+  return {icon:String(rank),cls:'',numCls:'num'};
+}
+
+async function loadLeaderboard(){
+  const rollEl = document.getElementById('lbRolls');
+  const rarEl = document.getElementById('lbRarity');
+
+  try {
+    const { data: rolls } = await sb.from('leaderboard_rolls').select('*');
+    if(!rolls || rolls.length === 0){
+      rollEl.innerHTML = '<div class="lb-empty">Belum ada pemain.</div>';
+    } else {
+      rollEl.innerHTML = rolls.map((r,i)=>{
+        const rank = i+1;
+        const m = medalFor(rank);
+        const highlight = state.lbPrevRolls[r.user_id] && state.lbPrevRolls[r.user_id] !== rank ? ' highlight' : '';
+        return `<div class="lb-item ${m.cls}${highlight}" data-uid="${r.user_id}">
+          <div class="lb-medal ${m.numCls}">${m.icon}</div>
+          <div class="lb-content">
+            <div class="lb-name">${escapeHtml(r.username||'Unknown')}</div>
+            <div class="lb-stat">${(r.total_rolls||0).toLocaleString()} Rolls</div>
+          </div>
+        </div>`;
+      }).join('');
+      rolls.forEach((r,i)=>{state.lbPrevRolls[r.user_id]=i+1});
+    }
+  } catch(e){
+    rollEl.innerHTML = '<div class="lb-empty">Gagal memuat</div>';
+  }
+
+  try {
+    const { data: rar } = await sb.from('leaderboard_rarity').select('*');
+    if(!rar || rar.length === 0){
+      rarEl.innerHTML = '<div class="lb-empty">Belum ada drop langka.</div>';
+    } else {
+      rarEl.innerHTML = rar.map((r,i)=>{
+        const rank = i+1;
+        const m = medalFor(rank);
+        const card = CARDS.find(c=>c.id===r.highest_power_id);
+        const rname = card ? RARITIES.find(x=>x.id===card.rarity).name : '—';
+        const rarClass = card ? 'rar-'+card.rarityTier : '';
+        const highlight = state.lbPrevRarity[r.user_id] && state.lbPrevRarity[r.user_id] !== rank ? ' highlight' : '';
+        return `<div class="lb-item ${m.cls}${highlight}" data-uid="${r.user_id}">
+          <div class="lb-medal ${m.numCls}">${m.icon}</div>
+          <div class="lb-content">
+            <div class="lb-name">${escapeHtml(r.username||'Unknown')}</div>
+            <div class="lb-stat ${rarClass}">${rname}</div>
+            <div class="lb-stat">1 in ${(r.highest_power_chance||0).toLocaleString()}</div>
+          </div>
+        </div>`;
+      }).join('');
+      rar.forEach((r,i)=>{state.lbPrevRarity[r.user_id]=i+1});
+    }
+  } catch(e){
+    rarEl.innerHTML = '<div class="lb-empty">Gagal memuat</div>';
+  }
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Realtime subscription for leaderboard updates
+let lbChannel = null;
+function subscribeLeaderboard(){
+  if(lbChannel) sb.removeChannel(lbChannel);
+  lbChannel = sb.channel('lb-ch')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_stats' }, () => {
+      loadLeaderboard();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'game_stats' }, () => {
+      loadLeaderboard();
+    })
+    .subscribe();
+  // Fallback polling tiap 3 detik (kalau realtime gagal)
+  setInterval(() => {
+    const pane = document.getElementById('pane-lb');
+    if(pane && pane.classList.contains('active')) loadLeaderboard();
+  }, 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// REALTIME — Rare drops
+// ══════════════════════════════════════════════════════
+let channel=null;
+function subscribeRealtime(){
+  if(channel)sb.removeChannel(channel);
+  channel=sb.channel('drops-ch')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'drops'},payload=>{
+      const d=payload.new;
+      if(!d)return;
+      if(d.user_id===state.user?.id)return;
+      if(d.power_chance<3000)return;
+      showToast(`✨ RARE DROP!\n${d.username} got\n"${d.power_name}"\n1 in ${d.power_chance.toLocaleString()}`,'rare');
+    }).subscribe();
+}
+
+// ══════════════════════════════════════════════════════
+// UTIL
+// ══════════════════════════════════════════════════════
+function showToast(text,cls){
+  let c=document.getElementById('toastContainer');
+  if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}
+  const el=document.createElement('div');
+  el.className='toast'+(cls?' '+cls:'');
+  el.innerHTML=text.replace(/\n/g,'<br>');
+  c.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateY(-20px)';setTimeout(()=>el.remove(),400)},5000);
+}
+function showLuckFloat(luck,money){
+  const el=document.createElement('div');
+  el.className='luck-float';
+  el.textContent=`🍀 +${luck}${money?' 💰 +'+money:''}`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1900);
+}
+let audioCtx=null;
+function beep(freq,dur=0.08,type='sine',vol=0.05){
+  if(state.muted)return;
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator();const g=audioCtx.createGain();
+    o.type=type;o.frequency.value=freq;g.gain.value=vol;
+    g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+    o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function playRaritySound(t){
+  const b=300+t*100;beep(b,0.1,'triangle',0.06);
+  setTimeout(()=>beep(b*1.5,0.15,'triangle',0.05),80);
+  if(t>=4)setTimeout(()=>beep(b*2,0.25,'sine',0.07),180);
+  if(t>=6)setTimeout(()=>beep(b*2.5,0.4,'sine',0.08),300);
+  if(t>=8){setTimeout(()=>beep(b*3,0.6,'sine',0.1),450);setTimeout(()=>beep(b*4,0.8,'triangle',0.08),700)}
+}
+function spawnParticles(count,color,speed=1){
+  const c=document.getElementById('particles');
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');p.className='particle';
+    const a=Math.random()*Math.PI*2;const d=(80+Math.random()*250)*speed;
+    p.style.left=cx+'px';p.style.top=cy+'px';
+    p.style.setProperty('--px',Math.cos(a)*d+'px');
+    p.style.setProperty('--py',Math.sin(a)*d+'px');
+    p.style.background=color;p.style.boxShadow=`0 0 10px ${color}`;
+    p.style.width=p.style.height=(3+Math.random()*6)+'px';
+    p.style.animationDuration=(0.8+Math.random()*1.2)+'s';
+    c.appendChild(p);setTimeout(()=>p.remove(),2200);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='index')renderIndex();
+    if(t.dataset.tab==='quest')renderQuests();
+    if(t.dataset.tab==='shop'){refreshShopIfNeeded();renderShop()}
+    if(t.dataset.tab==='lb')loadLeaderboard();
+  };
+});
+document.getElementById('rollBtn').onclick=performRoll;
+document.getElementById('openPackBtn').onclick=openLimitedPack;
+document.getElementById('muteBtn').onclick=async function(){
+  state.muted=!state.muted;this.textContent=state.muted?'🔇':'🔊';
+  if(state.user)await sb.from('user_settings').upsert({user_id:state.user.id,sound_enabled:!state.muted,updated_at:new Date().toISOString()});
+};
+document.getElementById('userChip').onclick=()=>{
+  if(confirm('Logout?')){ sb.auth.signOut().then(()=>location.reload()); }
+};
+document.getElementById('searchBox').oninput=e=>{idx.search=e.target.value;idx.shown=30;renderIndex()};
+document.getElementById('hideLockedBtn').onclick=function(){
+  idx.hideLocked=!idx.hideLocked;this.classList.toggle('active',idx.hideLocked);
+  idx.shown=30;renderIndex();
+};
+document.getElementById('loadMoreBtn').onclick=()=>{idx.shown+=30;renderIndex()};
+document.getElementById('refreshShopBtn').onclick=()=>{
+  if(state.shopRefreshAt>Date.now()){showToast('Tunggu ' + fmtTime(state.shopRefreshAt-Date.now()));return}
+  refreshShopIfNeeded(true);showToast('Shop refreshed');
+};
+const rarSel=document.getElementById('filterRar');
+RARITIES.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=r.name;rarSel.appendChild(o)});
+rarSel.onchange=e=>{idx.rar=e.target.value;idx.shown=30;renderIndex()};
+
+// ══════════════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════════════
+let questTimerInterval=null;
+function startQuestTimer(){
+  if(questTimerInterval)clearInterval(questTimerInterval);
+  questTimerInterval=setInterval(()=>{
+    const left=getTimeLeft();
+    const t=document.getElementById('questTimer');
+    t.textContent=fmtTime(left);
+    t.classList.toggle('urgent',left<2*60*1000);
+    if(left<=0){checkQuestReset();renderQuests();updateUI();beep(800,0.15,'sine',0.06)}
+    const shopLeft=state.shopRefreshAt-Date.now();
+    const st=document.getElementById('shopTimer');
+    if(st)st.textContent=shopLeft>0?fmtTime(shopLeft):'READY';
+  },1000);
+}
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+(async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){ await onLoginSuccess(); }
+  else { authModal.classList.add('show'); }
+  sb.auth.onAuthStateChange((event)=>{ if(event==='SIGNED_OUT'){location.reload()} });
+})();
+
+window.__PR = {CARDS,state,sb};
+</script>
+</body>
+</html>
