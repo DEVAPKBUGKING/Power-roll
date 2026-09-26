@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Power Rolling — Cloud</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#07070c;--card:#14141f;--card2:#1a1a28;--border:#252534;--text:#ededf2;--muted:#8b8ba0;--accent:#8b5cf6;--accent2:#22d3ee;--luck:#4ade80;--money:#fbbf24;--common:#9ca3af;--uncommon:#4ade80;--rare:#60a5fa;--epic:#a78bfa;--legendary:#fbbf24;--mythic:#f472b6;--divine:#fde047;--transcendent:#22d3ee;--absolute:#ff00ff;--admin:#ef4444}
+:root{--bg:#07070c;--card:#14141f;--card2:#1a1a28;--border:#252534;--text:#ededf2;--muted:#8b8ba0;--accent:#8b5cf6;--accent2:#22d3ee;--luck:#4ade80;--money:#fbbf24;--common:#9ca3af;--uncommon:#4ade80;--rare:#60a5fa;--epic:#a78bfa;--legendary:#fbbf24;--mythic:#f472b6;--divine:#fde047;--transcendent:#22d3ee;--absolute:#ff00ff;--limited:#f97316;--secret:#facc15;--admin:#ef4444}
 html,body{height:100%;overflow-x:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at top,#1a0f2e 0%,transparent 60%),radial-gradient(ellipse at bottom,#0a1a2e 0%,transparent 60%);z-index:-1;pointer-events:none}
 #app{max-width:1200px;margin:0 auto;padding:12px;min-height:100vh;display:flex;flex-direction:column}
@@ -12,6 +12,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .chip{background:var(--card);border:1px solid var(--border);padding:6px 10px;border-radius:9px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:5px}
 .chip.luck{color:var(--luck);border-color:rgba(74,222,128,.4)}.chip.money{color:var(--money);border-color:rgba(251,191,36,.4)}
 .chip.admin{color:var(--admin);border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1)}.chip.held{color:#f87171;border-color:rgba(239,68,68,.3);font-size:10px}
+.chip.bag{color:var(--accent2);border-color:rgba(34,211,238,.4);font-size:11px}
 .icon-btn{background:var(--card);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .icon-btn:active{transform:scale(.94)}
 .tabs{display:flex;gap:5px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--border);margin-bottom:10px;overflow-x:auto;scrollbar-width:none}
@@ -25,36 +26,55 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
 .stat-v{font-size:16px;font-weight:800;color:var(--accent2)}.stat-v.luck{color:var(--luck)}.stat-v.money{color:var(--money)}
 .stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-.roll-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:300px}
-.roll-btn{width:170px;height:170px;border-radius:50%;border:none;cursor:pointer;position:relative;font-family:inherit;background:linear-gradient(135deg,#8b5cf6,#6d28d9,#4c1d95);color:#fff;font-size:20px;font-weight:900;letter-spacing:2px;box-shadow:0 0 60px rgba(139,92,246,.5);animation:pulse 2.5s infinite}
+.roll-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:280px}
+.roll-btn{width:160px;height:160px;border-radius:50%;border:none;cursor:pointer;position:relative;font-family:inherit;background:linear-gradient(135deg,#8b5cf6,#6d28d9,#4c1d95);color:#fff;font-size:18px;font-weight:900;letter-spacing:2px;box-shadow:0 0 60px rgba(139,92,246,.5);animation:pulse 2.5s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 60px rgba(139,92,246,.5)}50%{box-shadow:0 0 80px rgba(139,92,246,.8)}}
 .roll-btn::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:2px solid transparent;background:conic-gradient(from 0deg,#8b5cf6,#22d3ee,#8b5cf6) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:spin 4s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.roll-btn:active:not(:disabled){transform:scale(.96)}.roll-btn:disabled{opacity:.6;cursor:not-allowed;animation:none}
+.roll-btn:active:not(:disabled){transform:scale(.96)}.roll-btn:disabled{opacity:.5;cursor:not-allowed;animation:none}
 .roll-btn small{display:block;font-size:9px;letter-spacing:1px;opacity:.7;margin-top:4px}
-.card{width:190px;height:275px;border-radius:16px;background:var(--card2);border:2px solid var(--border);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.card.large{width:220px;height:320px}
+.auto-roll-panel{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.auto-roll-btn{background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#000;padding:10px 20px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px}
+.auto-roll-btn.locked{background:var(--card);color:var(--muted);border:1px solid var(--border)}
+.auto-roll-btn.on{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;animation:autoPulse 1.2s infinite}
+@keyframes autoPulse{0%,100%{box-shadow:0 0 20px rgba(34,197,94,.5)}50%{box-shadow:0 0 40px rgba(34,197,94,.9)}}
+.card{width:100%;max-width:220px;aspect-ratio:2/3;border-radius:14px;background:var(--card2);border:2px solid var(--border);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.card.large{max-width:240px}
 .card-art{flex:1;position:relative;overflow:hidden;background:#000}
 .card-art .art-layer,.card-art .art-pattern,.card-art .art-shine{position:absolute;inset:0}
 .card-art .art-pattern{opacity:.5;mix-blend-mode:overlay}
 .card-art .art-symbol{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;filter:drop-shadow(0 0 20px rgba(255,255,255,.4));z-index:2}
 .card-art .art-shine{background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%)}
-.card-info{padding:7px 9px;background:linear-gradient(180deg,rgba(20,20,31,.95),var(--card2));border-top:1px solid var(--border);min-height:76px;display:flex;flex-direction:column;justify-content:center}
-.card-name{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card.large .card-name{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.card-cat{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
-.card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:4px;gap:3px}
-.card-qty{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.75);border:1px solid var(--accent);color:#fff;font-size:10px;font-weight:900;padding:2px 7px;border-radius:8px;z-index:3;backdrop-filter:blur(4px)}
-.card-qty.escrow{background:rgba(239,68,68,.7);border-color:#ef4444}
-.rarity-pill{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.08)}
+.card-info{padding:8px 10px;background:linear-gradient(180deg,rgba(20,20,31,.95),var(--card2));border-top:1px solid var(--border);min-height:80px;display:flex;flex-direction:column;justify-content:center}
+.card-name{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.large .card-name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card-cat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.card-meta{display:flex;justify-content:space-between;align-items:center;margin-top:5px;gap:4px}
+.card-qty{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.8);border:1px solid var(--accent);color:#fff;font-size:11px;font-weight:900;padding:3px 8px;border-radius:8px;z-index:3;backdrop-filter:blur(4px)}
+.rarity-pill{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.08)}
 .rarity-pill.c{color:var(--common)}.rarity-pill.u{color:var(--uncommon)}.rarity-pill.r{color:var(--rare)}.rarity-pill.e{color:var(--epic)}.rarity-pill.l{color:var(--legendary)}.rarity-pill.m{color:var(--mythic)}.rarity-pill.d{color:var(--divine)}.rarity-pill.t{color:var(--transcendent)}.rarity-pill.a{color:var(--absolute)}
-.card-chance{font-size:8px;color:var(--muted);font-weight:600}
-.card.border-rarity-common{border-color:var(--common)}.card.border-rarity-uncommon{border-color:var(--uncommon);box-shadow:0 0 20px rgba(74,222,128,.25)}.card.border-rarity-rare{border-color:var(--rare);box-shadow:0 0 25px rgba(96,165,250,.35)}.card.border-rarity-epic{border-color:var(--epic);box-shadow:0 0 30px rgba(167,139,250,.4)}.card.border-rarity-legendary{border-color:var(--legendary);box-shadow:0 0 35px rgba(251,191,36,.5)}.card.border-rarity-mythic{border-color:var(--mythic);box-shadow:0 0 40px rgba(244,114,182,.6)}.card.border-rarity-divine{border-color:var(--divine);box-shadow:0 0 50px rgba(253,224,71,.7)}.card.border-rarity-transcendent{border-color:var(--transcendent);box-shadow:0 0 60px rgba(34,211,238,.8)}.card.border-rarity-absolute{border-color:var(--absolute);box-shadow:0 0 70px rgba(255,0,255,.9);animation:absGlow 1.2s infinite}
-@keyframes absGlow{0%,100%{box-shadow:0 0 70px rgba(255,0,255,.9)}50%{box-shadow:0 0 100px rgba(255,0,255,1)}}
+.rarity-pill.lim{color:var(--limited);background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4)}
+.rarity-pill.sec{color:var(--secret);background:rgba(250,204,21,.2);border:1px solid rgba(250,204,21,.5);animation:secretPulse 2s infinite}
+@keyframes secretPulse{0%,100%{box-shadow:0 0 8px rgba(250,204,21,.5)}50%{box-shadow:0 0 16px rgba(250,204,21,.9)}}
+.card-chance{font-size:9px;color:var(--muted);font-weight:600}
+.card.border-rarity-common{border-color:var(--common)}
+.card.border-rarity-uncommon{border-color:var(--uncommon);box-shadow:0 0 20px rgba(74,222,128,.25)}
+.card.border-rarity-rare{border-color:var(--rare);box-shadow:0 0 25px rgba(96,165,250,.35)}
+.card.border-rarity-epic{border-color:var(--epic);box-shadow:0 0 30px rgba(167,139,250,.4)}
+.card.border-rarity-legendary{border-color:var(--legendary);box-shadow:0 0 35px rgba(251,191,36,.5)}
+.card.border-rarity-mythic{border-color:var(--mythic);box-shadow:0 0 40px rgba(244,114,182,.6)}
+.card.border-rarity-divine{border-color:var(--divine);box-shadow:0 0 50px rgba(253,224,71,.7)}
+.card.border-rarity-transcendent{border-color:var(--transcendent);box-shadow:0 0 60px rgba(34,211,238,.8);animation:transGlow 2s infinite}
+@keyframes transGlow{0%,100%{box-shadow:0 0 60px rgba(34,211,238,.8),0 0 100px rgba(34,211,238,.3)}50%{box-shadow:0 0 90px rgba(34,211,238,1),0 0 140px rgba(34,211,238,.5)}}
+.card.border-rarity-absolute{border-color:var(--absolute);box-shadow:0 0 70px rgba(255,0,255,.9),0 0 130px rgba(255,0,255,.4);animation:absGlow 1.2s infinite}
+@keyframes absGlow{0%,100%{box-shadow:0 0 70px rgba(255,0,255,.9),0 0 130px rgba(255,0,255,.4)}50%{box-shadow:0 0 100px rgba(255,0,255,1),0 0 180px rgba(255,0,255,.6)}}
+.card.border-rarity-limited{border-color:var(--limited);box-shadow:0 0 40px rgba(249,115,22,.7)}
+.card.border-rarity-secret{border-color:var(--secret);box-shadow:0 0 80px rgba(250,204,21,1),0 0 140px rgba(250,204,21,.6);animation:secretCard 1.5s infinite}
+@keyframes secretCard{0%,100%{box-shadow:0 0 80px rgba(250,204,21,1),0 0 140px rgba(250,204,21,.6)}50%{box-shadow:0 0 120px rgba(250,204,21,1),0 0 200px rgba(250,204,21,.9)}}
 .card.locked .card-art .art-layer{filter:grayscale(1) brightness(.2)}.card.locked .card-art .art-symbol{opacity:.15}.card.locked .card-name{color:var(--muted)}
-.result{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:300px;justify-content:center}
-.result-empty{color:var(--muted);font-size:12px;text-align:center;padding:40px 20px;border:2px dashed var(--border);border-radius:16px;max-width:220px}
-.result-desc{font-size:10px;color:var(--muted);text-align:center;max-width:220px}
+.result{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:280px;justify-content:center;padding:0 8px}
+.result-empty{color:var(--muted);font-size:12px;text-align:center;padding:40px 20px;border:2px dashed var(--border);border-radius:16px;max-width:240px}
+.result-desc{font-size:10px;color:var(--muted);text-align:center;max-width:240px}
 .quest-header{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;flex-wrap:wrap;gap:8px}
 .quest-header h2{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase}.quest-header p{font-size:10px;color:var(--muted)}
 .quest-timer{font-family:monospace;font-size:18px;font-weight:800;color:var(--accent2);background:rgba(34,211,238,.08);padding:6px 12px;border-radius:10px;border:1px solid rgba(34,211,238,.25)}
@@ -78,7 +98,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .search-box{flex:1;min-width:140px;background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;outline:none}
 .filter-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:7px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
 .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.index-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.index-grid .card{max-width:100%}
 .load-more{width:100%;padding:12px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px}
 .progress-bar{height:6px;background:var(--card);border-radius:3px;overflow:hidden;margin-bottom:10px;border:1px solid var(--border)}
 .progress-fill{height:100%;background:linear-gradient(90deg,#8b5cf6,#22d3ee);transition:width .5s;border-radius:2px}
@@ -150,6 +171,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .auction-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:12px;position:relative}
 .auction-card.ending-soon{border-color:#ef4444;animation:auctionPulse 1s infinite}
 @keyframes auctionPulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,.3)}50%{box-shadow:0 0 40px rgba(239,68,68,.7)}}
+.auction-card.settling{border-color:var(--accent2);animation:settlingPulse 1s infinite}
+@keyframes settlingPulse{0%,100%{box-shadow:0 0 20px rgba(34,211,238,.4)}50%{box-shadow:0 0 40px rgba(34,211,238,.8)}}
 .auction-card .art{width:100%;aspect-ratio:1/1.2;border-radius:10px;margin-bottom:8px;position:relative;overflow:hidden}
 .auction-card .art .symbol{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px}
 .auction-card .title{font-size:12px;font-weight:800;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -175,6 +198,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes revealIn{0%{transform:scale(.3) rotateY(180deg);opacity:0}60%{transform:scale(1.1) rotateY(0)}100%{transform:scale(1);opacity:1}}
 .absolute-text{position:absolute;top:8%;left:0;right:0;text-align:center;font-size:24px;font-weight:900;letter-spacing:8px;color:var(--absolute);text-shadow:0 0 30px var(--absolute);animation:absFade 2.5s ease;pointer-events:none}
 @keyframes absFade{0%{opacity:0;transform:scale(.5)}30%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.secret-text{position:absolute;top:6%;left:0;right:0;text-align:center;font-size:22px;font-weight:900;letter-spacing:10px;color:var(--secret);text-shadow:0 0 40px var(--secret),0 0 80px var(--secret);animation:secretFade 3.5s ease;pointer-events:none;z-index:10}
+@keyframes secretFade{0%{opacity:0;transform:scale(.3) rotate(-10deg)}20%{opacity:1;transform:scale(1.2) rotate(0)}50%{opacity:1;transform:scale(1)}90%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.3)}}
 .pack-shake{animation:packShake 1.5s ease}
 @keyframes packShake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-6px,2px) rotate(-3deg)}20%{transform:translate(6px,-2px) rotate(3deg)}50%{transform:translate(-6px,2px) rotate(-3deg)}80%{transform:translate(6px,-2px) rotate(3deg)}}
 .particles{position:fixed;inset:0;pointer-events:none;z-index:1001}
@@ -201,12 +226,15 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .auth-sub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:18px}
 .auth-box label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:10px 0 5px;font-weight:700}
 .auth-box input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.auth-box input:focus{border-color:var(--accent)}
 .auth-btn{width:100%;margin-top:16px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:9px;padding:13px;font-weight:800;font-size:13px;letter-spacing:1.5px;cursor:pointer;font-family:inherit;text-transform:uppercase}
 .auth-btn:disabled{opacity:.5}
 .auth-switch{text-align:center;font-size:11px;color:var(--muted);margin-top:14px}
 .auth-switch a{color:var(--accent2);cursor:pointer;font-weight:700}
-.auth-error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:9px 12px;border-radius:9px;font-size:11px;margin-bottom:10px;display:none}
+.auth-error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:9px 12px;border-radius:9px;font-size:11px;margin-bottom:10px;display:none;line-height:1.5}
 .auth-error.show{display:block}
+.auth-info{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:#67e8f9;padding:9px 12px;border-radius:9px;font-size:11px;margin-bottom:10px;display:none;line-height:1.5}
+.auth-info.show{display:block}
 .toast-container{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:6px;pointer-events:none;width:calc(100% - 24px);max-width:380px}
 .toast{background:linear-gradient(135deg,rgba(139,92,246,.95),rgba(34,211,238,.95));color:#fff;padding:12px 16px;border-radius:12px;font-size:12px;font-weight:700;box-shadow:0 12px 32px rgba(139,92,246,.5);animation:toastIn .4s;border:1px solid rgba(255,255,255,.2);pointer-events:auto}
 .toast.rare{background:linear-gradient(135deg,rgba(251,191,36,.95),rgba(244,114,182,.95))}
@@ -219,13 +247,20 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes toastIn{from{opacity:0;transform:translateY(-20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
 .luck-float{position:fixed;top:60px;right:16px;background:linear-gradient(135deg,var(--luck),#22c55e);color:#000;font-weight:900;padding:10px 16px;border-radius:10px;font-size:14px;z-index:2000;box-shadow:0 8px 24px rgba(74,222,128,.5);animation:luckFloat 1.8s ease forwards;pointer-events:none}
 @keyframes luckFloat{0%{opacity:0;transform:translateY(20px) scale(.8)}20%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-20px) scale(1)}}
+.auction-win-modal{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:3000;display:none;align-items:center;justify-content:center;flex-direction:column;padding:20px;backdrop-filter:blur(14px);animation:fadeIn .4s}
+.auction-win-modal.show{display:flex}
+.auction-win-title{font-size:24px;font-weight:900;letter-spacing:6px;background:linear-gradient(135deg,#fbbf24,#f472b6,#8b5cf6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;animation:auctionTitleIn 1s ease}
+@keyframes auctionTitleIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+.auction-win-sub{font-size:12px;color:var(--muted);margin-top:12px;font-style:italic}
+.auction-win-continue{margin-top:20px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;color:#fff;padding:12px 32px;border-radius:10px;font-weight:800;font-size:13px;letter-spacing:1px;cursor:pointer;font-family:inherit}
 .hidden{display:none!important}
 </style></head><body>
 <div id="app">
 <div class="header">
-<div><div class="brand">POWER ROLLING</div><small>Cloud Edition · 1,250 Unique Powers</small></div>
+<div><div class="brand">POWER ROLLING</div><small>Cloud Edition · Limited + Secret</small></div>
 <div class="header-right">
 <div class="chip admin hidden" id="adminChip">👑 ADMIN</div>
+<div class="chip bag" id="bagChip">🎒 0 jenis</div>
 <div class="chip luck" id="luckChip">🍀 +0</div>
 <div class="chip money" id="moneyChip">💰 0</div>
 <div class="chip held hidden" id="heldChip">🔒 0</div>
@@ -249,7 +284,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="stat"><div class="stat-v luck" id="sLuck">+0</div><div class="stat-l">Luck</div></div>
 <div class="stat"><div class="stat-v money" id="sMoney">0</div><div class="stat-l">Money</div></div>
 </div>
-<div class="roll-area"><button class="roll-btn" id="rollBtn">ROLL<small>TAP TO ROLL</small></button></div>
+<div class="roll-area">
+<button class="roll-btn" id="rollBtn">ROLL<small>TAP TO ROLL</small></button>
+<div class="auto-roll-panel"><button class="auto-roll-btn locked" id="autoRollBtn">🔒 AUTO ROLL</button></div>
+<div id="bagWarn"></div>
+</div>
 <div class="result" id="resultArea"><div class="result-empty" id="resultEmpty">Tekan ROLL untuk memulai ✨</div><div id="resultCard" class="hidden"></div></div>
 </section>
 
@@ -260,16 +299,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </section>
 
 <section class="pane" id="pane-index">
-<div class="stats-panel" style="margin-top:0;margin-bottom:10px"><div class="stats-title">POWER INDEX · <span id="idxFound">0</span> / 1250</div><div class="progress-bar"><div class="progress-fill" id="idxProgress"></div></div></div>
+<div class="stats-panel" style="margin-top:0;margin-bottom:10px"><div class="stats-title">POWER INDEX · <span id="idxFound">0</span> / <span id="idxTotal">1250</span></div><div class="progress-bar"><div class="progress-fill" id="idxProgress"></div></div></div>
 <div class="index-tools"><input type="text" class="search-box" id="searchBox" placeholder="🔍 Cari power..."><select class="filter-btn" id="filterRar"><option value="">All Rarities</option></select><button class="filter-btn" id="hideLockedBtn">Hide Locked</button></div>
+<div id="limitedSection"></div>
 <div class="index-grid" id="indexGrid"></div>
 <button class="load-more" id="loadMoreBtn">Load More</button>
 </section>
 
 <section class="pane" id="pane-shop">
-<div class="stats-panel" style="margin-top:0"><div class="stats-title">🔥 LIMITED CARD</div>
-<div class="limited-pack"><div class="fire">🔥</div><div class="l-title">LIMITED CARD PACK</div><div class="l-range">1 in 500 — 1 in 10,000</div><div class="l-price">💰 1,500</div><button class="l-btn" id="openPackBtn">OPEN PACK</button></div></div>
+<div class="stats-panel" style="margin-top:0"><div class="stats-title">🔥 LIMITED CARD PACK</div>
+<div class="limited-pack"><div class="fire">🔥</div><div class="l-title">LIMITED PACK</div><div class="l-range">Pikachu → Quqli → Dragonite → Mewtwo → Lugia → ✨Arceus</div><div class="l-price">💰 1,500</div><button class="l-btn" id="openPackBtn">OPEN PACK</button></div></div>
 <div class="stats-panel"><div class="stats-title">🍀 Luck Boosts</div><div id="luckPacks"></div></div>
+<div class="stats-panel"><div class="stats-title">⚡ Auto Roll</div><div id="autoRollShop"></div></div>
 <div class="stats-panel"><div class="stats-title">🎴 Power Cards · <span id="shopTimer">05:00</span></div><div class="shop-grid" id="shopGrid"></div><button class="load-more" id="refreshShopBtn" style="margin-top:8px">🔄 REFRESH SHOP</button></div>
 </section>
 
@@ -299,29 +340,35 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="overlay" id="rollOverlay"><div class="spinner-area" id="spinnerArea"></div></div>
 <div class="particles" id="particles"></div>
 
+<div class="auction-win-modal" id="auctionWinModal">
+<div class="auction-win-title">🏆 AUCTION WON</div>
+<div id="auctionWinCard"></div>
+<div class="auction-win-sub">Added to your collection</div>
+<button class="auction-win-continue" id="auctionWinContinue">CONTINUE</button>
+</div>
+
 <div class="modal" id="cardPickerModal"><div class="modal-box"><h3>Pilih Kartu</h3><div class="card-picker" id="cardPickerList"></div><div class="modal-actions"><button class="btn-secondary" id="closeCardPicker">Tutup</button></div></div></div>
 <div class="modal" id="createAuctionModal"><div class="modal-box"><h3>🔨 Create Auction</h3><label>Pilih Kartu</label><select id="auctionCardSelect"></select><label>Quantity</label><input type="number" id="auctionQty" value="1" min="1"><label>Starting Price</label><input type="number" id="auctionPrice" value="100" min="1"><div style="font-size:11px;color:var(--muted);margin-top:8px">Listing fee: 💰 200 (tidak refund)</div><div class="modal-actions"><button class="btn-secondary" id="closeAuctionModal">Batal</button><button class="btn-primary" id="confirmCreateAuction">BUAT (200)</button></div></div></div>
 <div class="modal" id="bidModal"><div class="modal-box"><h3>🔨 Place Bid</h3><div id="bidInfo" style="font-size:12px;margin-bottom:12px"></div><label>Your Bid</label><input type="number" id="bidAmount" min="1"><div class="modal-actions"><button class="btn-secondary" id="closeBidModal">Batal</button><button class="btn-primary" id="confirmBid">BID</button></div></div></div>
 <div class="modal" id="coinsModal"><div class="modal-box"><h3>💰 Set Coins</h3><label>Jumlah Coins</label><input type="number" id="coinsInput" min="0" value="0"><div class="modal-actions"><button class="btn-secondary" id="closeCoinsModal">Batal</button><button class="btn-primary" id="confirmCoins">SET</button></div></div></div>
 
 <div class="auth-modal" id="authModal"><div class="auth-box">
-<div class="auth-brand">POWER ROLLING</div><div class="auth-sub">Login untuk sync progress</div><div class="auth-error" id="authError"></div>
-<div id="loginForm"><label>Username</label><input type="text" id="loginUser" maxlength="20"><label>Password</label><input type="password" id="loginPass" maxlength="64"><button class="auth-btn" id="loginBtn">LOGIN</button><div class="auth-switch">Belum punya akun? <a id="showSignup">Buat Akun</a></div></div>
-<div id="signupForm" style="display:none"><label>Username</label><input type="text" id="signupUser" maxlength="20"><label>Password</label><input type="password" id="signupPass" maxlength="64"><label>Confirm Password</label><input type="password" id="signupPass2" maxlength="64"><button class="auth-btn" id="signupBtn">CREATE ACCOUNT</button><div class="auth-switch">Sudah punya akun? <a id="showLogin">Login</a></div></div>
+<div class="auth-brand">POWER ROLLING</div><div class="auth-sub">Login untuk sync progress</div>
+<div class="auth-error" id="authError"></div><div class="auth-info" id="authInfo"></div>
+<div id="loginForm"><label>Username</label><input type="text" id="loginUser" maxlength="20" autocomplete="username"><label>Password</label><input type="password" id="loginPass" maxlength="64" autocomplete="current-password"><button class="auth-btn" id="loginBtn">LOGIN</button><div class="auth-switch">Belum punya akun? <a id="showSignup">Buat Akun</a></div></div>
+<div id="signupForm" style="display:none"><label>Username</label><input type="text" id="signupUser" maxlength="20" autocomplete="username"><label>Password</label><input type="password" id="signupPass" maxlength="64" autocomplete="new-password"><label>Confirm Password</label><input type="password" id="signupPass2" maxlength="64" autocomplete="new-password"><button class="auth-btn" id="signupBtn">CREATE ACCOUNT</button><div class="auth-switch">Sudah punya akun? <a id="showLogin">Login</a></div></div>
 </div></div>
 
 <script>
 'use strict';
-// ══════════════════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════════════════
 const SUPABASE_URL='https://hrijffzwkrmxwreznaqd.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_wZlLFlvWCIuuOha0iUg67g_Pfr2Opzp';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'pr_auth'}});
+const MAX_PER_CARD=10;
+const AUTO_ROLL_PRICE=5000;
+const PACK_PRICE=1500;
 
-// ══════════════════════════════════════════════════════
-// CARD GENERATION
-// ══════════════════════════════════════════════════════
+// ═════ CARD GENERATION ═════
 function mulberry32(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=seed;t=t+Math.imul(t^t>>>15,t|1)^t;t=t^t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 const CARD_SEED=0xC0FFEE;
 const CATEGORIES=[
@@ -371,6 +418,15 @@ const RARITIES=[
 {id:'absolute',name:'Absolute',short:'A',minChance:10000,maxChance:10000,count:5,tier:8}];
 const RARITY_LUCK_MULT={0:0.02,1:0.10,2:0.20,3:0.30,4:0.40,5:0.30,6:0.15,7:0.08,8:0.02};
 const VERBS={elemental:'mengendalikan elemen',magic:'memanipulasi sihir',spiritual:'menyelaraskan jiwa',logic:'menganalisis pola',psychic:'membaca pikiran',technology:'menggabungkan teknologi',cosmic:'memanggil galaksi',divine:'menyalurkan cahaya ilahi',shadow:'mengendalikan kegelapan',nature:'memerintah alam',time:'memanipulasi waktu',space:'melipat ruang',energy:'mengendalikan energi',reality:'membengkokkan realitas',unique:'menggabungkan kekuatan unik'};
+
+const LIMITED_CARDS=[
+{id:100001,name:'Pikachu',chance:350,rarity:'limited',symbol:'⚡',rarityTier:5,catName:'Limited',description:'Master of lightning'},
+{id:100002,name:'Quqli',chance:890,rarity:'limited',symbol:'🔥',rarityTier:5,catName:'Limited',description:'Mysterious fire spirit'},
+{id:100003,name:'Dragonite',chance:2900,rarity:'limited',symbol:'🐉',rarityTier:6,catName:'Limited',description:'Ancient dragon'},
+{id:100004,name:'Mewtwo',chance:7000,rarity:'limited',symbol:'🧬',rarityTier:7,catName:'Limited',description:'Genetic apex'},
+{id:100005,name:'Lugia',chance:10000,rarity:'limited',symbol:'🌙',rarityTier:7,catName:'Limited',description:'Guardian of the sea'},
+{id:100006,name:'Arceus',chance:1000000,rarity:'secret',symbol:'✨',rarityTier:9,catName:'Secret',description:'The origin of all',isSecret:true}];
+
 function generateCards(){
   const rand=mulberry32(CARD_SEED);const pools={};
   for(const cat of CATEGORIES){const arr=[];for(const p of PREFIXES[cat.id])for(const s of SUFFIXES)arr.push({name:`${p} ${s}`,category:cat.id});
@@ -383,7 +439,7 @@ function generateCards(){
     const{name,category}=namePool[idx];
     const chance=rar.minChance===rar.maxChance?rar.minChance:Math.floor(rar.minChance+rand()*(rar.maxChance-rar.minChance));
     const cat=CATEGORIES.find(c=>c.id===category);const first=name.split(' ')[0].toLowerCase();
-    cards.push({id:idx,name,category,catName:cat.name,rarity:rar.id,rarityName:rar.name,rarityTier:rar.tier,chance,color:cat.hue,symbol:cat.symbol,description:`Kekuatan yang ${VERBS[category]} melalui ${first}.`});idx++}}
+    cards.push({id:idx,name,category,catName:cat.name,rarity:rar.id,rarityName:rar.name,rarityTier:rar.tier,chance,symbol:cat.symbol,description:`Kekuatan yang ${VERBS[category]} melalui ${first}.`});idx++}}
   const usedNames=new Set();
   for(const card of cards){if(!usedNames.has(card.name)){usedNames.add(card.name);continue}
     let fixed=false;const parts=card.name.split(' ');
@@ -393,52 +449,70 @@ function generateCards(){
     if(fixed)continue;let n=2;while(usedNames.has(`${card.name} ${n}`))n++;card.name=`${card.name} ${n}`;usedNames.add(card.name)}
   cards.forEach((c,i)=>{c.uid='power_'+String(i+1).padStart(4,'0')});
   cards.forEach(c=>c.weight=1/c.chance);
-  const totalW=cards.reduce((s,c)=>s+c.weight,0);cards.forEach(c=>c.probability=c.weight/totalW);
-  const names=new Set(cards.map(c=>c.name));console.log(`[CardGen] ${cards.length} cards | ${names.size} unique names`);
   return cards;
 }
-const CARDS=generateCards();const TOTAL_CARDS=CARDS.length;const CAT_HUE={};CATEGORIES.forEach(c=>CAT_HUE[c.id]=c.hue);
+const CARDS=generateCards();
+const ALL_CARDS=[...CARDS,...LIMITED_CARDS];
+const TOTAL_CARDS=CARDS.length;
+const CAT_HUE={};CATEGORIES.forEach(c=>CAT_HUE[c.id]=c.hue);
+function findCard(id){return ALL_CARDS.find(c=>c.id===id)}
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)}
 
-// ══════════════════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════════════════
+// ═════ STATE ═════
 let state={user:null,profile:null,role:'user',
-stats:{total_rolls:0,luck:0,money:0,held_coins:0,discovered_count:0,highest_power_chance:0,highest_power_id:null,luck_earned:0,quests_done:0},
-inventory:{},quests:[],questResetAt:0,muted:false,shopRefreshAt:0,shopItems:[],rolling:false,
-currentTrade:null,pendingOutgoing:null,auctions:[],auctionNames:{},lbPrevRolls:{},lbPrevRarity:{},incomingTrades:[]};
+stats:{total_rolls:0,luck:0,money:0,held_coins:0,discovered_count:0,highest_power_chance:0,highest_power_id:null,luck_earned:0,quests_done:0,auto_roll_owned:false},
+inventory:{},quests:[],questResetAt:0,muted:false,shopRefreshAt:0,shopItems:[],rolling:false,autoRolling:false,isOpeningPack:false,
+currentTrade:null,pendingOutgoing:null,auctions:[],auctionNames:{},lbPrevRolls:{},lbPrevRarity:{},incomingTrades:[],seenSettled:{}};
 
-// ══════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════
+function uniqueCardCount(){return Object.keys(state.inventory).filter(k=>state.inventory[k].quantity>0).length}
+function quantityOf(id){return state.inventory[id]?.quantity||0}
+
+// ═════ HELPERS ═════
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function fmtTime(ms){const t=Math.floor(ms/1000);const h=Math.floor(t/3600);const m=Math.floor((t%3600)/60);const s=t%60;return h>0?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
 function fmtCountdown(target){const left=target-Date.now();if(left<=0)return '00:00';const m=Math.floor(left/60000);const s=Math.floor((left%60000)/1000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
 
-// ══════════════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════════════
-const authModal=document.getElementById('authModal');const authError=document.getElementById('authError');
-document.getElementById('showSignup').onclick=()=>{document.getElementById('loginForm').style.display='none';document.getElementById('signupForm').style.display='block';authError.classList.remove('show')};
-document.getElementById('showLogin').onclick=()=>{document.getElementById('signupForm').style.display='none';document.getElementById('loginForm').style.display='block';authError.classList.remove('show')};
-function syntheticEmail(u){return u.toLowerCase()+'@power-rolling.local'}
-function showAuthErr(m){authError.textContent=m;authError.classList.add('show')}
+// ═════ AUTH ═════
+const authModal=document.getElementById('authModal');const authError=document.getElementById('authError');const authInfo=document.getElementById('authInfo');
+document.getElementById('showSignup').onclick=()=>{document.getElementById('loginForm').style.display='none';document.getElementById('signupForm').style.display='block';authError.classList.remove('show');authInfo.classList.remove('show')};
+document.getElementById('showLogin').onclick=()=>{document.getElementById('signupForm').style.display='none';document.getElementById('loginForm').style.display='block';authError.classList.remove('show');authInfo.classList.remove('show')};
+function syntheticEmail(u){return u.toLowerCase().replace(/[^a-z0-9_]/g,'')+'@regal-account.com'}
+function showAuthErr(m){authError.textContent=m;authError.classList.add('show');authInfo.classList.remove('show')}
+function showAuthInfo(m){authInfo.textContent=m;authInfo.classList.add('show');authError.classList.remove('show')}
+function translateAuthError(msg){
+  if(!msg)return 'Login gagal. Coba lagi.';
+  const m=msg.toLowerCase();
+  if(m.includes('invalid login credentials'))return 'Username atau password salah. Kalau baru pertama kali, klik "Buat Akun" dulu.';
+  if(m.includes('email not confirmed'))return '⚠️ Email belum dikonfirmasi. Matikan "Confirm email" di Supabase Providers.';
+  if(m.includes('user already registered'))return 'Username sudah dipakai. Coba login langsung.';
+  if(m.includes('rate limit')||m.includes('too many'))return 'Terlalu banyak percobaan. Tunggu 1 menit lalu coba lagi.';
+  if(m.includes('signup is disabled'))return '⚠️ Signup dimatikan. Aktifkan di Supabase Providers → Email.';
+  if(m.includes('invalid email'))return '⚠️ Format email ditolak. Matikan "Confirm email".';
+  if(m.includes('new row violates'))return 'RLS block. Pastikan SQL schema sudah dijalankan.';
+  return msg;
+}
 document.getElementById('signupBtn').onclick=async()=>{
   const u=document.getElementById('signupUser').value.trim();const p=document.getElementById('signupPass').value;const p2=document.getElementById('signupPass2').value;
-  if(!/^[a-zA-Z0-9_]{3,20}$/.test(u)){showAuthErr('Username 3-20 karakter');return}
+  if(!/^[a-zA-Z0-9_]{3,20}$/.test(u)){showAuthErr('Username 3-20 karakter, huruf/angka/_');return}
   if(p.length<8){showAuthErr('Password minimal 8 karakter');return}
   if(p.toLowerCase()===u.toLowerCase()){showAuthErr('Password tidak boleh sama dengan username');return}
   if(p!==p2){showAuthErr('Password konfirmasi tidak cocok');return}
   const btn=document.getElementById('signupBtn');btn.disabled=true;btn.textContent='CREATING...';
   try{
     const{data:ex}=await sb.from('profiles').select('id').eq('username_lower',u.toLowerCase()).maybeSingle();
-    if(ex)throw new Error('Username sudah digunakan');
-    const{data:auth,error}=await sb.auth.signUp({email:syntheticEmail(u),password:p});if(error)throw error;if(!auth.user)throw new Error('Gagal buat akun');
-    const{error:pe}=await sb.from('profiles').insert({id:auth.user.id,username:u,username_lower:u.toLowerCase()});if(pe)throw pe;
-    await sb.from('game_stats').insert({user_id:auth.user.id});await sb.from('user_settings').insert({user_id:auth.user.id});
-    if(!auth.session){const{data:si,error:le}=await sb.auth.signInWithPassword({email:syntheticEmail(u),password:p});if(le)throw le}
-    await onLoginSuccess();
-  }catch(e){showAuthErr(e.message||'Gagal signup')}
+    if(ex)throw new Error('Username sudah digunakan. Coba login atau pilih nama lain.');
+    const{data:auth,error}=await sb.auth.signUp({email:syntheticEmail(u),password:p});
+    if(error)throw error;
+    if(!auth.user)throw new Error('Gagal buat akun. Coba lagi.');
+    const{error:pe}=await sb.from('profiles').insert({id:auth.user.id,username:u,username_lower:u.toLowerCase()});
+    if(pe)throw new Error('Gagal simpan profile: '+pe.message);
+    try{await sb.from('game_stats').insert({user_id:auth.user.id})}catch(e){console.warn('stats insert',e)}
+    try{await sb.from('user_settings').insert({user_id:auth.user.id})}catch(e){console.warn('settings insert',e)}
+    if(!auth.session){const{data:si,error:le}=await sb.auth.signInWithPassword({email:syntheticEmail(u),password:p});
+      if(le){showAuthInfo('✅ Akun dibuat! Tapi Supabase minta konfirmasi email.\n\nMatikan "Confirm email" di Supabase Providers, lalu klik LOGIN.');btn.disabled=false;btn.textContent='CREATE ACCOUNT';return}
+      if(!si.session)throw new Error('Akun dibuat, tapi login otomatis gagal. Coba klik Login manual.')}
+    showAuthInfo('✅ Akun berhasil dibuat! Loading...');await onLoginSuccess();
+  }catch(e){console.error('[Signup]',e);showAuthErr(translateAuthError(e.message))}
   btn.disabled=false;btn.textContent='CREATE ACCOUNT';
 };
 document.getElementById('loginBtn').onclick=async()=>{
@@ -447,15 +521,14 @@ document.getElementById('loginBtn').onclick=async()=>{
   const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='LOGGING IN...';
   try{
     const{data,error}=await sb.auth.signInWithPassword({email:syntheticEmail(u),password:p});
-    if(error||!data.session)throw new Error('Username atau password salah');
+    if(error){console.warn('[Login] error:',error.message);throw new Error(error.message)}
+    if(!data.session)throw new Error('Session tidak diterima. Coba lagi.');
     await onLoginSuccess();
-  }catch(e){showAuthErr(e.message||'Login gagal')}
+  }catch(e){console.error('[Login]',e);showAuthErr(translateAuthError(e.message))}
   btn.disabled=false;btn.textContent='LOGIN';
 };
 
-// ══════════════════════════════════════════════════════
-// LOAD CLOUD STATE
-// ══════════════════════════════════════════════════════
+// ═════ LOAD CLOUD ═════
 async function loadCloudState(){
   const{data:{session}}=await sb.auth.getSession();
   if(!session){authModal.classList.add('show');return false}
@@ -481,11 +554,10 @@ async function onLoginSuccess(){
   subscribeRealtime();subscribeTradeRealtime();subscribeAuctionRealtime();
   startQuestTimer();refreshShopIfNeeded();loadLeaderboard();loadAuctions();loadTradeHistory();loadIncomingTrades();
   await restoreTradeState();
+  settleExpiredAuctions();
 }
 
-// ══════════════════════════════════════════════════════
-// UI
-// ══════════════════════════════════════════════════════
+// ═════ UI ═════
 function updateUI(){
   const s=state.stats;const isAdmin=state.role==='admin';
   document.getElementById('sRolls').textContent=(s.total_rolls||0).toLocaleString();
@@ -494,6 +566,7 @@ function updateUI(){
   document.getElementById('sMoney').textContent=isAdmin?'∞':(s.money||0).toLocaleString();
   document.getElementById('luckChip').textContent=isAdmin?'🍀 100K×':('🍀 +'+(s.luck||0));
   document.getElementById('moneyChip').textContent=isAdmin?'💰 ∞':('💰 '+(s.money||0).toLocaleString());
+  document.getElementById('bagChip').textContent='🎒 '+uniqueCardCount()+' jenis';
   const heldChip=document.getElementById('heldChip');
   if((s.held_coins||0)>0){heldChip.classList.remove('hidden');heldChip.textContent='🔒 '+(s.held_coins||0).toLocaleString()}else{heldChip.classList.add('hidden')}
   document.getElementById('userChip').textContent='👤 '+(state.profile?.username||'—');
@@ -509,11 +582,14 @@ function updateUI(){
   if(done>0){b.textContent=done;b.style.display='inline-block'}else{b.style.display='none'}
   const tb=document.getElementById('tradeBadge');
   if(state.incomingTrades.length>0){tb.textContent=state.incomingTrades.length;tb.style.display='inline-block'}else{tb.style.display='none'}
+  document.getElementById('bagWarn').innerHTML='';
+  const ar=document.getElementById('autoRollBtn');
+  if(!s.auto_roll_owned){ar.className='auto-roll-btn locked';ar.textContent='🔒 AUTO ROLL'}
+  else if(state.autoRolling){ar.className='auto-roll-btn on';ar.textContent='⏹ STOP AUTO'}
+  else{ar.className='auto-roll-btn';ar.textContent='▶ START AUTO'}
 }
 
-// ══════════════════════════════════════════════════════
-// QUEST
-// ══════════════════════════════════════════════════════
+// ═════ QUEST ═════
 const QUEST_INTERVAL=15*60*1000,QUEST_COUNT=5;
 const QUEST_RARITY_WEIGHTS=[{id:'common',weight:35},{id:'uncommon',weight:28},{id:'rare',weight:20},{id:'epic',weight:10},{id:'legendary',weight:5},{id:'mythic',weight:2}];
 const QUEST_RARITY_DEF={common:{name:'Common'},uncommon:{name:'Uncommon'},rare:{name:'Rare'},epic:{name:'Epic'},legendary:{name:'Legendary'},mythic:{name:'Mythic'}};
@@ -526,194 +602,259 @@ legendary:[{type:'rolls',minT:50,maxT:70,luck:[12,18],money:[150,350]},{type:'di
 mythic:[{type:'rolls',minT:80,maxT:120,luck:[20,30],money:[300,750]},{type:'discover',minT:8,maxT:12,luck:[20,30],money:[300,750]},{type:'legendary_plus',minT:1,maxT:1,luck:[20,30],money:[300,750]}]};
 function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function pickQuestRarity(){const t=QUEST_RARITY_WEIGHTS.reduce((s,r)=>s+r.weight,0);let roll=Math.random()*t;for(const r of QUEST_RARITY_WEIGHTS){roll-=r.weight;if(roll<=0)return r.id}return 'common'}
-function buildQuest(rar){
-  const pool=QUEST_POOL[rar];const t=pool[Math.floor(Math.random()*pool.length)];
-  const target=randInt(t.minT,t.maxT);const luck=randInt(t.luck[0],t.luck[1]);const money=randInt(t.money[0],t.money[1]);
-  const q={id:'q_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),rarity:rar,type:t.type,target,luck,money,current:0,completed:false,claimed:false,meta:{}};
-  if(t.type==='category'){const c=CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];q.meta.categoryId=c.id;q.meta.categoryName=c.name}
-  return q;
-}
+function buildQuest(rar){const pool=QUEST_POOL[rar];const t=pool[Math.floor(Math.random()*pool.length)];const target=randInt(t.minT,t.maxT);const luck=randInt(t.luck[0],t.luck[1]);const money=randInt(t.money[0],t.money[1]);const q={id:'q_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),rarity:rar,type:t.type,target,luck,money,current:0,completed:false,claimed:false,meta:{}};if(t.type==='category'){const c=CATEGORIES[Math.floor(Math.random()*CATEGORIES.length)];q.meta.categoryId=c.id;q.meta.categoryName=c.name}return q}
 function generateQuests(){const qs=[];for(let i=0;i<QUEST_COUNT;i++)qs.push(buildQuest(pickQuestRarity()));return qs}
-function checkQuestReset(){
-  const now=Date.now();
-  if(state.questResetAt>now+QUEST_INTERVAL){state.questResetAt=now+QUEST_INTERVAL}
-  if(!state.quests||state.quests.length===0||!state.questResetAt||now>=state.questResetAt){
-    state.quests=generateQuests();state.questResetAt=now+QUEST_INTERVAL;saveQuestsDebounced();return true
-  }
-  return false;
-}
-function onQuestProgress(card,isNew){
-  let changed=false;
-  for(const q of state.quests){
-    if(q.claimed||q.completed)continue;let inc=0;
-    switch(q.type){
-      case 'rolls':inc=1;break;
-      case 'discover':if(isNew)inc=1;break;
-      case 'uncommon_plus':if(card.rarityTier>=1)inc=1;break;
-      case 'rare_plus':if(card.rarityTier>=2)inc=1;break;
-      case 'epic_plus':if(card.rarityTier>=3)inc=1;break;
-      case 'legendary_plus':if(card.rarityTier>=4)inc=1;break;
-      case 'category':if(card.category===q.meta.categoryId&&isNew)inc=1;break;
-    }
-    if(inc>0){q.current=Math.min(q.current+inc,q.target);if(q.current>=q.target)q.completed=true;changed=true}
-  }
-  if(changed)saveQuestsDebounced();
-}
-async function claimQuest(qid){
-  const q=state.quests.find(x=>x.id===qid);if(!q||!q.completed||q.claimed)return;q.claimed=true;
-  state.stats.luck=(state.stats.luck||0)+q.luck;state.stats.luck_earned=(state.stats.luck_earned||0)+q.luck;
-  state.stats.money=(state.stats.money||0)+q.money;state.stats.quests_done=(state.stats.quests_done||0)+1;
-  await sb.from('game_stats').update({luck:state.stats.luck,luck_earned:state.stats.luck_earned,money:state.stats.money,quests_done:state.stats.quests_done,updated_at:new Date().toISOString()}).eq('user_id',state.user.id);
-  saveQuestsDebounced();showLuckFloat(q.luck,q.money);updateUI();renderQuests();
-  beep(600,.1,'sine',.08);setTimeout(()=>beep(900,.15,'sine',.08),100);
-}
+function checkQuestReset(){const now=Date.now();if(state.questResetAt>now+QUEST_INTERVAL){state.questResetAt=now+QUEST_INTERVAL}if(!state.quests||state.quests.length===0||!state.questResetAt||now>=state.questResetAt){state.quests=generateQuests();state.questResetAt=now+QUEST_INTERVAL;saveQuestsDebounced();return true}return false}
+function onQuestProgress(card,isNew){let changed=false;for(const q of state.quests){if(q.claimed||q.completed)continue;let inc=0;switch(q.type){case 'rolls':inc=1;break;case 'discover':if(isNew)inc=1;break;case 'uncommon_plus':if(card.rarityTier>=1)inc=1;break;case 'rare_plus':if(card.rarityTier>=2)inc=1;break;case 'epic_plus':if(card.rarityTier>=3)inc=1;break;case 'legendary_plus':if(card.rarityTier>=4)inc=1;break;case 'category':if(card.category===q.meta.categoryId&&isNew)inc=1;break}if(inc>0){q.current=Math.min(q.current+inc,q.target);if(q.current>=q.target)q.completed=true;changed=true}}if(changed)saveQuestsDebounced()}
+async function claimQuest(qid){const q=state.quests.find(x=>x.id===qid);if(!q||!q.completed||q.claimed)return;q.claimed=true;state.stats.luck=(state.stats.luck||0)+q.luck;state.stats.luck_earned=(state.stats.luck_earned||0)+q.luck;state.stats.money=(state.stats.money||0)+q.money;state.stats.quests_done=(state.stats.quests_done||0)+1;try{await sb.from('game_stats').update({luck:state.stats.luck,luck_earned:state.stats.luck_earned,money:state.stats.money,quests_done:state.stats.quests_done,updated_at:new Date().toISOString()}).eq('user_id',state.user.id)}catch(e){console.warn(e)}saveQuestsDebounced();showLuckFloat(q.luck,q.money);updateUI();renderQuests();beep(600,.1,'sine',.08);setTimeout(()=>beep(900,.15,'sine',.08),100)}
 let questSaveTimer=null;
-function saveQuestsDebounced(){if(questSaveTimer)clearTimeout(questSaveTimer);questSaveTimer=setTimeout(async()=>{if(!state.user)return;await sb.from('quest_state').upsert({user_id:state.user.id,quests:state.quests,reset_at:new Date(state.questResetAt).toISOString(),updated_at:new Date().toISOString()})},800)}
-function questText(q){
-  switch(q.type){
-    case 'rolls':return `Perform ${q.target} Rolls`;
-    case 'discover':return `Discover ${q.target} New Power${q.target>1?'s':''}`;
-    case 'uncommon_plus':return `Get ${q.target} Uncommon-or-higher Power${q.target>1?'s':''}`;
-    case 'rare_plus':return `Get ${q.target} Rare-or-higher Power${q.target>1?'s':''}`;
-    case 'epic_plus':return `Get ${q.target} Epic-or-higher Power${q.target>1?'s':''}`;
-    case 'legendary_plus':return `Get ${q.target} Legendary-or-higher Power${q.target>1?'s':''}`;
-    case 'category':return `Discover a ${q.meta.categoryName} Power`;
-  }
-  return 'Unknown';
-}
-function renderQuests(){
-  const grid=document.getElementById('questsGrid');if(!state.quests||state.quests.length===0)return;
-  grid.innerHTML=state.quests.map(q=>{
-    const rd=QUEST_RARITY_DEF[q.rarity];const pct=Math.min(100,(q.current/q.target)*100);let status='';
-    if(q.claimed)status='<div class="quest-status claimed">✓ Claimed</div>';
-    else if(q.completed)status=`<div class="quest-status completed">✓ Completed</div><button class="claim-btn" data-qid="${q.id}">Claim</button>`;
-    else status='<div class="quest-status">In Progress</div>';
-    return`<div class="quest-card ${q.rarity}"><span class="quest-rarity ${q.rarity}">★ ${rd.name} Quest</span><div class="quest-obj">${questText(q)}</div><div><div class="quest-progress"><span>Progress</span><span><b>${q.current}</b> / ${q.target}</span></div><div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div></div><div class="quest-reward"><span class="r-luck">🍀 +${q.luck}</span><span class="r-money">💰 +${q.money}</span></div>${status}</div>`;
-  }).join('');
-  grid.querySelectorAll('.claim-btn').forEach(b=>{b.onclick=()=>claimQuest(b.dataset.qid)});
-}
+function saveQuestsDebounced(){if(questSaveTimer)clearTimeout(questSaveTimer);questSaveTimer=setTimeout(async()=>{if(!state.user)return;try{await sb.from('quest_state').upsert({user_id:state.user.id,quests:state.quests,reset_at:new Date(state.questResetAt).toISOString(),updated_at:new Date().toISOString()})}catch(e){console.warn(e)}},800)}
+function questText(q){switch(q.type){case 'rolls':return `Perform ${q.target} Rolls`;case 'discover':return `Discover ${q.target} New Power${q.target>1?'s':''}`;case 'uncommon_plus':return `Get ${q.target} Uncommon-or-higher`;case 'rare_plus':return `Get ${q.target} Rare-or-higher`;case 'epic_plus':return `Get ${q.target} Epic-or-higher`;case 'legendary_plus':return `Get ${q.target} Legendary-or-higher`;case 'category':return `Discover a ${q.meta.categoryName} Power`}return 'Unknown'}
+function renderQuests(){const grid=document.getElementById('questsGrid');if(!state.quests||state.quests.length===0)return;grid.innerHTML=state.quests.map(q=>{const rd=QUEST_RARITY_DEF[q.rarity];const pct=Math.min(100,(q.current/q.target)*100);let status='';if(q.claimed)status='<div class="quest-status claimed">✓ Claimed</div>';else if(q.completed)status=`<div class="quest-status completed">✓ Completed</div><button class="claim-btn" data-qid="${q.id}">Claim</button>`;else status='<div class="quest-status">In Progress</div>';return`<div class="quest-card ${q.rarity}"><span class="quest-rarity ${q.rarity}">★ ${rd.name}</span><div class="quest-obj">${questText(q)}</div><div><div class="quest-progress"><span>Progress</span><span><b>${q.current}</b> / ${q.target}</span></div><div class="quest-bar"><div class="quest-bar-fill" style="width:${pct}%"></div></div></div><div class="quest-reward"><span class="r-luck">🍀 +${q.luck}</span><span class="r-money">💰 +${q.money}</span></div>${status}</div>`}).join('');grid.querySelectorAll('.claim-btn').forEach(b=>{b.onclick=()=>claimQuest(b.dataset.qid)})}
 
-// ══════════════════════════════════════════════════════
-// ROLL
-// ══════════════════════════════════════════════════════
+// ═════ ROLL ═════
+function applyLuckToWeight(c,l){const tier=c.rarityTier;let bonus;if(tier===0)bonus=1/(1+l*1.5);else if(tier===1)bonus=1/(1+l*0.5);else if(tier>=9)bonus=1+Math.sqrt(l)*0.3;else{const bm=RARITY_LUCK_MULT[tier]||0;bonus=1+bm*Math.sqrt(l)*8}return c.weight*bonus}
 function rollCard(){
-  const r=Math.random();const luck=state.role==='admin'?100000:(state.stats.luck||0);
+  const r=Math.random();const luck=state.role==='admin'?100000:(state.stats.luck||0);const l=luck/100;
   let totalW=0;const eff=new Array(CARDS.length);
-  for(let i=0;i<CARDS.length;i++){const c=CARDS[i];const mult=RARITY_LUCK_MULT[c.rarityTier]||0;eff[i]=c.weight*(1+(luck/100)*mult);totalW+=eff[i]}
+  for(let i=0;i<CARDS.length;i++){eff[i]=applyLuckToWeight(CARDS[i],l);totalW+=eff[i]}
   const target=r*totalW;let cum=0;
   for(let i=0;i<CARDS.length;i++){cum+=eff[i];if(cum>=target)return CARDS[i]}
-  return CARDS[CARDS.length-1];
+  return CARDS[0]; // Pikachu-equivalent fallback untuk normal roll
 }
 async function performRoll(){
-  if(state.rolling)return;state.rolling=true;
+  if(state.rolling)return;
+  state.rolling=true;
   const btn=document.getElementById('rollBtn');btn.disabled=true;
-  const finalCard=rollCard();const overlay=document.getElementById('rollOverlay');overlay.classList.add('active');
+  const finalCard=rollCard();
+  const overlay=document.getElementById('rollOverlay');overlay.classList.add('active');
   await animateSpinner();
-  const isNew=!state.inventory[finalCard.id];
+  const isNew=quantityOf(finalCard.id)===0;
   try{
     const{data,error}=await sb.rpc('record_roll',{p_power_id:finalCard.id,p_power_name:finalCard.name,p_power_chance:finalCard.chance,p_rarity:finalCard.rarity,p_is_new:isNew});
     if(error)console.warn(error.message);
     if(data){state.stats.total_rolls=data.total_rolls;state.stats.discovered_count=data.discovered_count;state.stats.highest_power_chance=data.highest_power_chance;state.stats.highest_power_id=data.highest_power_id}
-    await sb.rpc('add_card_to_inventory',{p_power_id:finalCard.id,p_amount:1});
-    if(state.inventory[finalCard.id])state.inventory[finalCard.id].quantity++;
-    else state.inventory[finalCard.id]={quantity:1,in_auction:0,in_trade:0};
-  }catch(e){console.warn(e)}
-  onQuestProgress(finalCard,isNew);await revealCard(finalCard);overlay.classList.remove('active');
-  btn.disabled=false;state.rolling=false;showResult(finalCard);updateUI();renderQuests();renderIndex();
-}
-function animateSpinner(){
-  const area=document.getElementById('spinnerArea');
-  area.innerHTML=`<div class="spinner-card"><div class="mini-art" id="spinArt">?</div><div class="mini-name" id="spinName">...</div><div class="mini-rar" id="spinRar">...</div></div>`;
-  const a=document.getElementById('spinArt'),n=document.getElementById('spinName'),r=document.getElementById('spinRar');
-  const dur=1400+Math.random()*400;const start=performance.now();let last=0;
-  return new Promise(resolve=>{
-    function tick(){
-      const t=performance.now()-start;if(t>dur){resolve();return}
-      const prog=t/dur;const interval=40+prog*prog*260;
-      if(t-last>interval){last=t;const rc=CARDS[Math.floor(Math.random()*CARDS.length)];const rar=RARITIES.find(x=>x.id===rc.rarity);const cat=CATEGORIES.find(c=>c.id===rc.category);const h=(CAT_HUE[rc.category]+(Math.random()*60-30)+360)%360;
-        a.textContent=cat.symbol;a.style.color=`hsl(${h},80%,60%)`;a.style.borderColor=`hsl(${h},80%,60%)`;
-        n.textContent=rc.name;n.style.color='#fff';r.textContent=rar.name;r.style.color='#fff';beep(200+Math.random()*400,.02,'square',.02)}
-      requestAnimationFrame(tick);
+    const{data:invData,error:invErr}=await sb.rpc('add_card_to_inventory',{p_power_id:finalCard.id,p_amount:1});
+    if(invErr)console.warn(invErr.message);
+    else if(invData){
+      if(state.inventory[finalCard.id])state.inventory[finalCard.id].quantity=invData.qty;
+      else state.inventory[finalCard.id]={quantity:invData.qty,in_auction:0,in_trade:0};
     }
-    tick();
-  });
+  }catch(e){console.warn(e)}
+  onQuestProgress(finalCard,isNew);
+  await revealCard(finalCard);overlay.classList.remove('active');
+  btn.disabled=false;state.rolling=false;
+  showResult(finalCard);updateUI();renderQuests();renderIndex();
 }
+function animateSpinner(){const area=document.getElementById('spinnerArea');area.innerHTML=`<div class="spinner-card"><div class="mini-art" id="spinArt">?</div><div class="mini-name" id="spinName">...</div><div class="mini-rar" id="spinRar">...</div></div>`;const a=document.getElementById('spinArt'),n=document.getElementById('spinName'),r=document.getElementById('spinRar');const dur=1300+Math.random()*300;const start=performance.now();let last=0;return new Promise(resolve=>{function tick(){const t=performance.now()-start;if(t>dur){resolve();return}const prog=t/dur;const interval=40+prog*prog*240;if(t-last>interval){last=t;const rc=ALL_CARDS[Math.floor(Math.random()*ALL_CARDS.length)];const rr=RARITIES.find(x=>x.id===rc.rarity);const cat=CATEGORIES.find(c=>c.id===rc.category);const h=cat?(CAT_HUE[rc.category]+(Math.random()*60-30)+360)%360:200;a.textContent=rc.symbol||'?';a.style.color=`hsl(${h},80%,60%)`;a.style.borderColor=`hsl(${h},80%,60%)`;n.textContent=rc.name;n.style.color='#fff';r.textContent=rr?rr.name:rc.rarity;r.style.color='#fff';beep(200+Math.random()*400,.02,'square',.02)}requestAnimationFrame(tick)}tick()})}
 async function revealCard(card){
-  const area=document.getElementById('spinnerArea');const rar=RARITIES.find(r=>r.id===card.rarity);const cat=CATEGORIES.find(c=>c.id===card.category);
-  const h=(CAT_HUE[card.category]+(hashStr(card.name)%60-30)+360)%360;const isAbs=card.rarity==='absolute';const isHigh=card.rarityTier>=4;
+  const area=document.getElementById('spinnerArea');
+  const rar=RARITIES.find(r=>r.id===card.rarity);
+  const cat=CATEGORIES.find(c=>c.id===card.category);
+  const h=cat?(CAT_HUE[card.category]+(hashStr(card.name)%60-30)+360)%360:280;
+  const isSecret=card.rarity==='secret';
+  const isAbs=card.rarity==='absolute';
+  const isLimited=card.rarity==='limited';
+  const isHigh=card.rarityTier>=4;
   const overlay=document.getElementById('rollOverlay');
+  if(isSecret){
+    document.body.style.background='#000';
+    await new Promise(r=>setTimeout(r,800));
+    spawnParticles(200,'#facc15',2.5);spawnParticles(150,'#ff00ff',2);
+    await new Promise(r=>setTimeout(r,400));
+    overlay.classList.add('flash');
+    area.innerHTML=`<div class="spinner-card reveal-card"><div class="mini-art" style="color:#facc15;border-color:#facc15;box-shadow:0 0 100px #facc15,0 0 200px #facc15,0 0 300px rgba(250,204,21,.5)">${card.symbol||'✨'}</div><div class="mini-name" style="color:#facc15">${card.name}</div><div class="mini-rar" style="color:#facc15">✨ SECRET · 1 in ${card.chance.toLocaleString()}</div></div><div class="secret-text">◆ SECRET ◆</div>`;
+    playSecretSound();setTimeout(()=>overlay.classList.remove('flash'),320);
+    await new Promise(r=>setTimeout(r,3800));
+    document.body.style.background='';
+    return;
+  }
   if(isAbs){overlay.classList.add('shake');document.body.style.background='#000';await new Promise(r=>setTimeout(r,400))}
-  area.innerHTML=`<div class="spinner-card reveal-card"><div class="mini-art" style="color:hsl(${h},90%,65%);border-color:hsl(${h},90%,60%);box-shadow:0 0 60px hsl(${h},90%,60%),0 0 120px hsla(${h},90%,60%,.5)">${cat.symbol}</div><div class="mini-name" style="color:hsl(${h},90%,70%)">${card.name}</div><div class="mini-rar" style="color:#fff">${rar.name} · 1 in ${card.chance.toLocaleString()}</div></div>${isAbs?'<div class="absolute-text">◆ ABSOLUTE ◆</div>':''}`;
-  playRaritySound(rar.tier);
-  const pC=[4,8,14,22,35,50,70,90,130];const pCol={common:'#9ca3af',uncommon:'#4ade80',rare:'#60a5fa',epic:'#a78bfa',legendary:'#fbbf24',mythic:'#f472b6',divine:'#fde047',transcendent:'#22d3ee',absolute:'#ff00ff'};
-  spawnParticles(pC[rar.tier]||4,pCol[card.rarity]||'#8b5cf6',1+rar.tier*.15);
+  area.innerHTML=`<div class="spinner-card reveal-card"><div class="mini-art" style="color:hsl(${h},90%,65%);border-color:hsl(${h},90%,60%);box-shadow:0 0 60px hsl(${h},90%,60%),0 0 120px hsla(${h},90%,60%,.5)">${card.symbol||'?'}</div><div class="mini-name" style="color:hsl(${h},90%,70%)">${card.name}</div><div class="mini-rar" style="color:#fff">${rar?rar.name:card.rarity} · 1 in ${card.chance.toLocaleString()}</div></div>${isAbs?'<div class="absolute-text">◆ ABSOLUTE ◆</div>':''}`;
+  playRaritySound(isLimited?(rar?.tier||5):(rar?.tier||0));
+  const pC=[4,8,14,22,35,50,70,90,130,180];const pCol={common:'#9ca3af',uncommon:'#4ade80',rare:'#60a5fa',epic:'#a78bfa',legendary:'#fbbf24',mythic:'#f472b6',divine:'#fde047',transcendent:'#22d3ee',absolute:'#ff00ff',limited:'#f97316',secret:'#facc15'};
+  spawnParticles(pC[card.rarityTier]||4,pCol[card.rarity]||'#8b5cf6',1+card.rarityTier*.15);
   if(isHigh){overlay.classList.add('flash');setTimeout(()=>overlay.classList.remove('flash'),320)}
-  await new Promise(r=>setTimeout(r,isAbs?2400:1700));overlay.classList.remove('shake');document.body.style.background='';
+  await new Promise(r=>setTimeout(r,isAbs?2400:1700));
+  overlay.classList.remove('shake');document.body.style.background='';
 }
 function showResult(card){
   document.getElementById('resultEmpty').classList.add('hidden');
   const c=document.getElementById('resultCard');c.classList.remove('hidden');
-  c.innerHTML=`${cardHTML(card,{large:true,qty:state.inventory[card.id]?.quantity||0})}<div class="result-desc">${card.description}</div>`;
+  c.innerHTML=`${cardHTML(card,{large:true,qty:quantityOf(card.id)})}<div class="result-desc">${card.description||''}</div>`;
 }
 function cardHTML(card,opts={}){
-  const{large=false,locked=false,qty=0}=opts;const rar=RARITIES.find(r=>r.id===card.rarity);const name=locked?'???':card.name;
-  const cat=CATEGORIES.find(c=>c.id===card.category);const hsh=hashStr(card.name+card.id);const shift=(hsh%60)-30;const x=20+(hsh%60);const y=20+((hsh>>3)%60);
-  const c1=`hsl(${(CAT_HUE[card.category]+shift+360)%360},75%,55%)`,c2=`hsl(${(CAT_HUE[card.category]+shift+20+360)%360},65%,30%)`,c3=`hsl(${(CAT_HUE[card.category]+shift-20+360)%360},55%,12%)`;
+  const{large=false,locked=false,qty=0}=opts;
+  const rar=RARITIES.find(r=>r.id===card.rarity);
+  const name=locked?'???':card.name;
+  const cat=CATEGORIES.find(c=>c.id===card.category);
+  const isLimited=card.rarity==='limited';
+  const isSecret=card.rarity==='secret';
+  const hsh=hashStr(card.name+(card.id||0));
+  const shift=(hsh%60)-30;
+  const baseHue=cat?CAT_HUE[card.category]:(isLimited?25:(isSecret?45:280));
+  const x=20+(hsh%60);const y=20+((hsh>>3)%60);
+  const c1=`hsl(${(baseHue+shift+360)%360},75%,55%)`,c2=`hsl(${(baseHue+shift+20+360)%360},65%,30%)`,c3=`hsl(${(baseHue+shift-20+360)%360},55%,12%)`;
   const qtyBadge=qty>0?`<div class="card-qty">x${qty}</div>`:'';
-  return`<div class="card ${large?'large':''} ${locked?'locked':''} border-rarity-${card.rarity}" style="position:relative">${qtyBadge}<div class="card-art"><div class="art-layer" style="background:radial-gradient(ellipse at ${x}% ${y}%,${c1} 0%,${c2} 45%,${c3} 100%)"></div><div class="art-pattern" style="background:${cat.pattern};background-size:${20+(hsh%30)}px ${20+(hsh%30)}px"></div><div class="art-symbol">${cat.symbol}</div><div class="art-shine"></div></div><div class="card-info"><div class="card-name">${name}</div><div class="card-cat">${card.catName}</div><div class="card-meta"><span class="rarity-pill ${rar.short.toLowerCase()}">${locked?'???':rar.name}</span><span class="card-chance">1 in ${card.chance.toLocaleString()}</span></div></div></div>`;
+  const rarityClass=isSecret?'sec':(isLimited?'lim':(rar?rar.short.toLowerCase():'c'));
+  const rarityLabel=isSecret?'SECRET':(isLimited?'LIMITED':(rar?rar.name:card.rarity));
+  const catLabel=isSecret?'Secret':(isLimited?'Limited':(card.catName||'—'));
+  const pattern=cat?cat.pattern:'radial-gradient(circle,rgba(255,255,255,.15) 1px,transparent 2px)';
+  const symbol=card.symbol||(cat?cat.symbol:'?');
+  return`<div class="card ${large?'large':''} ${locked?'locked':''} border-rarity-${isSecret?'secret':(isLimited?'limited':card.rarity)}" style="position:relative">${qtyBadge}<div class="card-art"><div class="art-layer" style="background:radial-gradient(ellipse at ${x}% ${y}%,${c1} 0%,${c2} 45%,${c3} 100%)"></div><div class="art-pattern" style="background:${pattern};background-size:${20+(hsh%30)}px ${20+(hsh%30)}px"></div><div class="art-symbol">${symbol}</div><div class="art-shine"></div></div><div class="card-info"><div class="card-name">${name}</div><div class="card-cat">${catLabel}</div><div class="card-meta"><span class="rarity-pill ${rarityClass}">${locked?'???':rarityLabel}</span><span class="card-chance">1 in ${card.chance.toLocaleString()}</span></div></div></div>`;
 }
 
-// ══════════════════════════════════════════════════════
-// LIMITED PACK
-// ══════════════════════════════════════════════════════
-const PACK_PRICE=1500;
-function rollLimitedPack(){
-  const pool=CARDS.filter(c=>c.chance>=500&&c.chance<=10000);const luck=state.role==='admin'?100000:(state.stats.luck||0);
-  let totalW=0;const eff=new Array(pool.length);
-  for(let i=0;i<pool.length;i++){const c=pool[i];const mult=RARITY_LUCK_MULT[c.rarityTier]||0;eff[i]=c.weight*(1+(luck/100)*mult);totalW+=eff[i]}
-  const r=Math.random()*totalW;let cum=0;
-  for(let i=0;i<pool.length;i++){cum+=eff[i];if(cum>=r)return pool[i]}
-  return pool[pool.length-1];
+// ═════ AUTO ROLL ═════
+document.getElementById('autoRollBtn').onclick=async()=>{
+  if(!state.stats.auto_roll_owned){showToast('🔒 Beli Auto Roll di Shop dulu','');switchTab('shop');return}
+  state.autoRolling=!state.autoRolling;
+  updateUI();
+  if(state.autoRolling)autoRollLoop();
+};
+async function autoRollLoop(){
+  while(state.autoRolling){
+    if(state.rolling){await new Promise(r=>setTimeout(r,200));continue}
+    try{await performRoll()}catch(e){console.error(e);state.autoRolling=false;updateUI();break}
+    await new Promise(r=>setTimeout(r,800));
+  }
 }
-async function openLimitedPack(){
-  if(state.role!=='admin'&&(state.stats.money||0)<PACK_PRICE){showToast('Not enough money');return}
-  const btn=document.getElementById('openPackBtn');btn.disabled=true;btn.textContent='OPENING...';
-  const card=rollLimitedPack();const isNew=!state.inventory[card.id];
-  const overlay=document.getElementById('rollOverlay');overlay.classList.add('active');const area=document.getElementById('spinnerArea');
-  area.innerHTML=`<div class="spinner-card"><div class="mini-art pack-shake" style="border-color:#fbbf24;color:#fbbf24;box-shadow:0 0 60px #fbbf24">🔥</div><div class="mini-name">Opening Pack...</div><div class="mini-rar" style="color:#fbbf24">LIMITED</div></div>`;
-  beep(300,.15,'square',.08);for(let i=0;i<6;i++)setTimeout(()=>beep(300+i*100,.08,'square',.06),i*120);
-  await new Promise(r=>setTimeout(r,1500));
+async function buyAutoRoll(){
+  if(state.stats.auto_roll_owned){showToast('Already owned');return}
   try{
-    const{data,error}=await sb.rpc('open_limited_pack',{p_power_id:card.id,p_power_name:card.name,p_power_chance:card.chance,p_rarity:card.rarity,p_is_new:isNew,p_price:PACK_PRICE});
+    const{error}=await sb.rpc('buy_auto_roll',{p_price:AUTO_ROLL_PRICE});
     if(error)throw error;
-    if(data){state.stats.money=data.new_money;state.stats.discovered_count=data.discovered_count;state.stats.highest_power_chance=data.highest_power_chance;state.stats.highest_power_id=data.highest_power_id}
-    if(state.inventory[card.id])state.inventory[card.id].quantity++;
-    else state.inventory[card.id]={quantity:1,in_auction:0,in_trade:0};
-  }catch(e){showToast(e.message||'Gagal buka pack');overlay.classList.remove('active');btn.disabled=false;btn.textContent='OPEN PACK';return}
-  await revealCard(card);overlay.classList.remove('active');btn.disabled=false;btn.textContent='OPEN PACK';
-  showResult(card);updateUI();renderIndex();
+    state.stats.auto_roll_owned=true;
+    showToast('⚡ Auto Roll unlocked!','');
+    updateUI();renderShop();
+  }catch(e){showToast(e.message||'Gagal beli')}
 }
 
-// ══════════════════════════════════════════════════════
-// INDEX
-// ══════════════════════════════════════════════════════
+// ═════ LIMITED PACK (SERVER-SIDE RNG) ═════
+async function openLimitedPack(){
+  if(state.isOpeningPack){showToast('Pack sedang dibuka...');return}
+  if(state.role!=='admin' && (state.stats.money||0) < PACK_PRICE){showToast('Not enough money');return}
+  state.isOpeningPack = true;
+  const btn=document.getElementById('openPackBtn');btn.disabled=true;btn.textContent='OPENING...';
+
+  try{
+    // Server-side RNG + charge + inventory (atomic)
+    const { data, error } = await sb.rpc('open_limited_pack_server', { p_price: PACK_PRICE });
+    if(error) throw error;
+    if(!data || !data.card_id) throw new Error('RNG failed');
+
+    // Update state lokal dari response server
+    state.stats.money = data.new_money;
+    const card = LIMITED_CARDS.find(c=>c.id === data.card_id);
+    if(card){
+      if(state.inventory[card.id]) state.inventory[card.id].quantity = data.new_qty;
+      else state.inventory[card.id] = { quantity: data.new_qty, in_auction:0, in_trade:0 };
+    }
+
+    // Play animation berdasarkan card ID
+    await showLimitedCardReveal(card);
+
+    // Show result
+    if(card) showResult(card);
+    if(data.capped) showToast('⚠️ Kartu sudah MAX (10/10)','');
+
+  }catch(e){
+    console.error('[Pack]', e);
+    showToast(e.message || 'Something went wrong');
+  } finally {
+    state.isOpeningPack = false;
+    btn.disabled = false; btn.textContent = 'OPEN PACK';
+    updateUI(); renderIndex();
+  }
+}
+
+async function showLimitedCardReveal(card){
+  if(!card){ console.warn('Card not found'); return; }
+  const overlay = document.getElementById('rollOverlay');
+  const area = document.getElementById('spinnerArea');
+  overlay.classList.add('active');
+
+  const isSecret = card.isSecret || card.rarity === 'secret';
+  const isLugia  = card.name === 'Lugia';
+  const isMewtwo = card.name === 'Mewtwo';
+  const isDragonite = card.name === 'Dragonite';
+
+  if(isSecret){
+    document.body.style.background = '#000';
+    area.innerHTML = `<div class="spinner-card"><div class="mini-art" style="border-color:#111;color:#111;box-shadow:none">?</div></div>`;
+    await new Promise(r=>setTimeout(r,900));
+    spawnParticles(60, '#facc15', 0.8);
+    await new Promise(r=>setTimeout(r,600));
+    spawnParticles(120, '#facc15', 1.5);
+    spawnParticles(80, '#ff00ff', 1.2);
+    await new Promise(r=>setTimeout(r,700));
+    overlay.classList.add('flash');
+    area.innerHTML = `<div class="spinner-card reveal-card"><div class="mini-art" style="color:#facc15;border-color:#facc15;box-shadow:0 0 100px #facc15,0 0 200px #facc15,0 0 300px rgba(250,204,21,.6)">${card.symbol||'✨'}</div><div class="mini-name" style="color:#facc15;text-shadow:0 0 20px #facc15">${card.name}</div><div class="mini-rar" style="color:#facc15">✨ SECRET · 1 in ${card.chance.toLocaleString()}</div></div><div class="secret-text">◆ SECRET ◆</div>`;
+    playSecretSound();
+    spawnParticles(200, '#facc15', 2.5);
+    setTimeout(()=>overlay.classList.remove('flash'), 320);
+    await new Promise(r=>setTimeout(r,3600));
+    document.body.style.background = '';
+    overlay.classList.remove('active');
+    return;
+  }
+
+  if(isLugia || isMewtwo){
+    overlay.classList.add('shake');
+    await new Promise(r=>setTimeout(r,400));
+    const color = isLugia ? '#60a5fa' : '#c084fc';
+    area.innerHTML = `<div class="spinner-card reveal-card"><div class="mini-art" style="color:${color};border-color:${color};box-shadow:0 0 80px ${color},0 0 140px ${color}">${card.symbol||'?'}</div><div class="mini-name" style="color:${color}">${card.name}</div><div class="mini-rar" style="color:#fff">LIMITED · 1 in ${card.chance.toLocaleString()}</div></div>`;
+    spawnParticles(90, color, 1.8);
+    if(isMewtwo) spawnParticles(50, '#a855f7', 1.5);
+    if(isLugia) spawnParticles(50, '#e0e7ff', 1.5);
+    playRaritySound(7);
+    overlay.classList.add('flash');
+    setTimeout(()=>overlay.classList.remove('flash'),320);
+    await new Promise(r=>setTimeout(r,2400));
+    overlay.classList.remove('shake');
+    overlay.classList.remove('active');
+    return;
+  }
+
+  if(isDragonite){
+    area.innerHTML = `<div class="spinner-card reveal-card"><div class="mini-art" style="color:#fb923c;border-color:#fb923c;box-shadow:0 0 60px #fb923c,0 0 120px rgba(251,146,60,.5)">${card.symbol||'🐉'}</div><div class="mini-name" style="color:#fb923c">${card.name}</div><div class="mini-rar" style="color:#fff">LIMITED · 1 in ${card.chance.toLocaleString()}</div></div>`;
+    spawnParticles(60, '#fb923c', 1.5);
+    playRaritySound(6);
+    await new Promise(r=>setTimeout(r,1900));
+    overlay.classList.remove('active');
+    return;
+  }
+
+  const color = card.name === 'Quqli' ? '#f97316' : '#fbbf24';
+  area.innerHTML = `<div class="spinner-card reveal-card"><div class="mini-art" style="color:${color};border-color:${color};box-shadow:0 0 40px ${color},0 0 80px rgba(251,191,36,.4)">${card.symbol||'⚡'}</div><div class="mini-name" style="color:${color}">${card.name}</div><div class="mini-rar" style="color:#fff">LIMITED · 1 in ${card.chance.toLocaleString()}</div></div>`;
+  spawnParticles(35, color, 1.2);
+  playRaritySound(5);
+  await new Promise(r=>setTimeout(r,1600));
+  overlay.classList.remove('active');
+}
+
+// ═════ INDEX ═════
 let idx={search:'',rar:'',hideLocked:false,shown:30};
 function renderIndex(){
+  renderLimitedSection();
   const grid=document.getElementById('indexGrid');let arr=CARDS.slice();
   if(idx.search){const q=idx.search.toLowerCase();arr=arr.filter(c=>c.name.toLowerCase().includes(q)||c.catName.toLowerCase().includes(q))}
   if(idx.rar)arr=arr.filter(c=>c.rarity===idx.rar);
   if(idx.hideLocked)arr=arr.filter(c=>state.inventory[c.id]);
   arr.sort((a,b)=>a.rarityTier-b.rarityTier||a.chance-b.chance);
   const show=arr.slice(0,idx.shown);
-  grid.innerHTML=show.map(c=>cardHTML(c,{locked:!state.inventory[c.id],qty:state.inventory[c.id]?.quantity||0})).join('');
+  grid.innerHTML=show.map(c=>cardHTML(c,{locked:!state.inventory[c.id],qty:quantityOf(c.id)})).join('');
   const lb=document.getElementById('loadMoreBtn');
   if(idx.shown>=arr.length)lb.classList.add('hidden');
   else{lb.classList.remove('hidden');lb.textContent=`Load More (${arr.length-idx.shown})`}
 }
+function renderLimitedSection(){
+  const el=document.getElementById('limitedSection');
+  const visible=LIMITED_CARDS.filter(c=>!c.isSecret||state.inventory[c.id]);
+  if(visible.length===0){el.innerHTML='';return}
+  el.innerHTML=`<div class="stats-panel" style="border-color:rgba(249,115,22,.4);background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(250,204,21,.05))"><div class="stats-title" style="color:var(--limited)">✨ LIMITED CARDS</div><div class="index-grid">${visible.map(c=>cardHTML(c,{locked:false,qty:quantityOf(c.id)})).join('')}</div></div>`;
+}
 
-// ══════════════════════════════════════════════════════
-// SHOP
-// ══════════════════════════════════════════════════════
+// ═════ SHOP ═════
 const LUCK_PACKS=[{id:'luck1',name:'Luck Boost I',luck:5,price:100},{id:'luck2',name:'Luck Boost II',luck:10,price:250},{id:'luck3',name:'Luck Boost III',luck:20,price:600}];
 const SHOP_REFRESH_MS=5*60*1000;
 function refreshShopIfNeeded(force=false){
@@ -722,14 +863,18 @@ function refreshShopIfNeeded(force=false){
   while(picked.length<3&&picked.length<cands.length){const c=cands[Math.floor(Math.random()*cands.length)];if(used.has(c.id))continue;used.add(c.id);picked.push(c)}
   state.shopItems=picked;state.shopRefreshAt=now+SHOP_REFRESH_MS;renderShop();
 }
-function priceOf(card){
-  if(card.chance<=50)return 150;if(card.chance<=100)return 300;if(card.chance<=250)return 600;
-  if(card.chance<=500)return 1200;if(card.chance<=1000)return 2500;if(card.chance<=2000)return 5000;return 10000;
-}
+function priceOf(card){if(card.chance<=50)return 150;if(card.chance<=100)return 300;if(card.chance<=250)return 600;if(card.chance<=500)return 1200;if(card.chance<=1000)return 2500;if(card.chance<=2000)return 5000;return 10000}
 function renderShop(){
   const lp=document.getElementById('luckPacks');
   lp.innerHTML=LUCK_PACKS.map(p=>`<div class="luck-pack"><div><div class="luck-pack-name">🍀 ${p.name}</div><div class="luck-pack-price">💰 ${p.price} · +${p.luck} Luck</div></div><button class="buy-btn" data-packid="${p.id}" style="width:auto;padding:8px 16px">BUY</button></div>`).join('');
   lp.querySelectorAll('.buy-btn').forEach(b=>{b.onclick=()=>buyLuckPack(b.dataset.packid)});
+  const ar=document.getElementById('autoRollShop');
+  if(state.stats.auto_roll_owned){
+    ar.innerHTML=`<div class="luck-pack" style="border-color:rgba(34,197,94,.5)"><div><div class="luck-pack-name" style="color:#22c55e">⚡ AUTO ROLL — OWNED</div><div class="luck-pack-price">Unlocked permanently</div></div></div>`;
+  } else {
+    ar.innerHTML=`<div class="luck-pack"><div><div class="luck-pack-name" style="color:#fbbf24">⚡ AUTO ROLL</div><div class="luck-pack-price">💰 ${AUTO_ROLL_PRICE.toLocaleString()} · Permanent</div></div><button class="buy-btn" id="buyAutoRollBtn" style="width:auto;padding:8px 16px">BUY</button></div>`;
+    document.getElementById('buyAutoRollBtn').onclick=buyAutoRoll;
+  }
   const sg=document.getElementById('shopGrid');
   sg.innerHTML=state.shopItems.map(c=>{
     const owned=!!state.inventory[c.id];const price=priceOf(c);const rar=RARITIES.find(r=>r.id===c.rarity);const cat=CATEGORIES.find(x=>x.id===c.category);
@@ -753,56 +898,45 @@ async function buyPowerCard(powerId){
   const price=priceOf(card);
   if(state.role!=='admin'&&(state.stats.money||0)<price){showToast('Not enough money');return}
   try{
-    const{data,error}=await sb.rpc('buy_power_card',{p_power_id:powerId,p_price:price});if(error)throw error;
+    const{data,error}=await sb.rpc('buy_power_card',{p_power_id:powerId,p_price:price});
+    if(error)throw error;
     state.stats.money=data.new_money;state.stats.discovered_count=data.discovered_count;
-    if(state.inventory[powerId])state.inventory[powerId].quantity++;
+    if(state.inventory[powerId])state.inventory[powerId].quantity=MAX_PER_CARD;
     else state.inventory[powerId]={quantity:1,in_auction:0,in_trade:0};
     showToast(`🎴 Bought ${card.name}!`);beep(600,.15,'sine',.08);updateUI();renderShop();renderIndex();
   }catch(e){showToast(e.message||'Gagal beli')}
 }
 
-// ══════════════════════════════════════════════════════
-// LEADERBOARD
-// ══════════════════════════════════════════════════════
+// ═════ LEADERBOARD ═════
 function medalFor(rank){if(rank===1)return{icon:'🥇',cls:'rank-1',numCls:''};if(rank===2)return{icon:'🥈',cls:'rank-2',numCls:''};if(rank===3)return{icon:'🥉',cls:'rank-3',numCls:''};return{icon:String(rank),cls:'',numCls:'num'}}
 async function loadLeaderboard(){
   const rollEl=document.getElementById('lbRolls');const rarEl=document.getElementById('lbRarity');
   try{
     const{data:rolls}=await sb.from('leaderboard_rolls').select('*');
     if(!rolls||rolls.length===0)rollEl.innerHTML='<div class="lb-empty">Belum ada pemain.</div>';
-    else{rollEl.innerHTML=rolls.map((r,i)=>{const m=medalFor(i+1);const hl=state.lbPrevRolls[r.user_id]&&state.lbPrevRolls[r.user_id]!==i+1?' highlight':'';return`<div class="lb-item ${m.cls}${hl}"><div class="lb-medal ${m.numCls}">${m.icon}</div><div class="lb-content"><div class="lb-name">${escapeHtml(r.username||'Unknown')}</div><div class="lb-stat">${(r.total_rolls||0).toLocaleString()} Rolls</div></div></div>`}).join('');
-      rolls.forEach((r,i)=>{state.lbPrevRolls[r.user_id]=i+1})}
+    else{rollEl.innerHTML=rolls.map((r,i)=>{const m=medalFor(i+1);const hl=state.lbPrevRolls[r.user_id]&&state.lbPrevRolls[r.user_id]!==i+1?' highlight':'';return`<div class="lb-item ${m.cls}${hl}"><div class="lb-medal ${m.numCls}">${m.icon}</div><div class="lb-content"><div class="lb-name">${escapeHtml(r.username||'Unknown')}</div><div class="lb-stat">${(r.total_rolls||0).toLocaleString()} Rolls</div></div></div>`}).join('');rolls.forEach((r,i)=>{state.lbPrevRolls[r.user_id]=i+1})}
   }catch(e){rollEl.innerHTML='<div class="lb-empty">Gagal memuat</div>'}
   try{
     const{data:rar}=await sb.from('leaderboard_rarity').select('*');
     if(!rar||rar.length===0)rarEl.innerHTML='<div class="lb-empty">Belum ada drop langka.</div>';
-    else{rarEl.innerHTML=rar.map((r,i)=>{const m=medalFor(i+1);const card=CARDS.find(c=>c.id===r.highest_power_id);const rname=card?RARITIES.find(x=>x.id===card.rarity).name:'—';const rarClass=card?'rar-'+card.rarityTier:'';const hl=state.lbPrevRarity[r.user_id]&&state.lbPrevRarity[r.user_id]!==i+1?' highlight':'';return`<div class="lb-item ${m.cls}${hl}"><div class="lb-medal ${m.numCls}">${m.icon}</div><div class="lb-content"><div class="lb-name">${escapeHtml(r.username||'Unknown')}</div><div class="lb-stat ${rarClass}">${rname}</div><div class="lb-stat">1 in ${(r.highest_power_chance||0).toLocaleString()}</div></div></div>`}).join('');
-      rar.forEach((r,i)=>{state.lbPrevRarity[r.user_id]=i+1})}
+    else{rarEl.innerHTML=rar.map((r,i)=>{const m=medalFor(i+1);const card=findCard(r.highest_power_id);const rname=card?(card.rarity==='secret'?'SECRET':(card.rarity==='limited'?'LIMITED':(RARITIES.find(x=>x.id===card.rarity)?.name||'—'))):'—';const rarClass=card?'rar-'+(card.rarityTier||0):'';const hl=state.lbPrevRarity[r.user_id]&&state.lbPrevRarity[r.user_id]!==i+1?' highlight':'';return`<div class="lb-item ${m.cls}${hl}"><div class="lb-medal ${m.numCls}">${m.icon}</div><div class="lb-content"><div class="lb-name">${escapeHtml(r.username||'Unknown')}</div><div class="lb-stat ${rarClass}">${rname}</div><div class="lb-stat">1 in ${(r.highest_power_chance||0).toLocaleString()}</div></div></div>`}).join('');rar.forEach((r,i)=>{state.lbPrevRarity[r.user_id]=i+1})}
   }catch(e){rarEl.innerHTML='<div class="lb-empty">Gagal memuat</div>'}
 }
 
-// ══════════════════════════════════════════════════════
-// TRADE
-// ══════════════════════════════════════════════════════
+// ═════ TRADE ═════
 async function sendTradeRequest(){
-  const un=document.getElementById('tradeUsername').value.trim();
-  if(!un){showToast('Masukkan username');return}
+  const un=document.getElementById('tradeUsername').value.trim();if(!un){showToast('Masukkan username');return}
   try{
-    const{data,error}=await sb.rpc('send_trade_request',{p_receiver_username:un});
-    if(error)throw error;
-    showToast(`✅ Request terkirim ke ${un}`);
-    document.getElementById('tradeUsername').value='';
-    state.pendingOutgoing={request_id:data.request_id,username:un};
-    renderOutgoingWaiting();
+    const{data,error}=await sb.rpc('send_trade_request',{p_receiver_username:un});if(error)throw error;
+    showToast(`✅ Request terkirim ke ${un}`);document.getElementById('tradeUsername').value='';
+    state.pendingOutgoing={request_id:data.request_id,username:un};renderOutgoingWaiting();
   }catch(e){showToast(e.message||'Gagal kirim')}
 }
 async function loadIncomingTrades(){
   if(!state.user)return;
   const{data}=await sb.from('trade_requests').select('*').eq('receiver_id',state.user.id).eq('status','pending').gt('expires_at',new Date().toISOString());
-  state.incomingTrades=data||[];
-  updateUI();
-  const box=document.getElementById('tradeIncoming');
-  if(!data||data.length===0){box.innerHTML='';return}
+  state.incomingTrades=data||[];updateUI();
+  const box=document.getElementById('tradeIncoming');if(!data||data.length===0){box.innerHTML='';return}
   const senderIds=[...new Set(data.map(r=>r.sender_id))];
   const{data:profs}=await sb.from('profiles').select('id,username').in('id',senderIds);
   const nameMap={};(profs||[]).forEach(p=>nameMap[p.id]=p.username);
@@ -813,47 +947,26 @@ function renderOutgoingWaiting(){
   const box=document.getElementById('tradeOutgoing');if(!box)return;
   if(!state.pendingOutgoing){box.innerHTML='';return}
   box.innerHTML=`<div class="stats-panel" style="border-color:var(--accent)"><div class="stats-title">🤝 Trade Request</div><div style="text-align:center;padding:20px 10px"><div style="font-size:32px;margin-bottom:8px">⏳</div><div style="font-size:14px;font-weight:800;margin-bottom:4px">Waiting for ${escapeHtml(state.pendingOutgoing.username)}...</div><div style="font-size:11px;color:var(--muted);margin-bottom:16px">Menunggu respon</div><button id="cancelOutgoingBtn" style="background:rgba(239,68,68,.2);color:#f87171;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:1px">CANCEL REQUEST</button></div></div>`;
-  document.getElementById('cancelOutgoingBtn').onclick=async()=>{
-    try{
-      await sb.rpc('cancel_trade_request',{p_request_id:state.pendingOutgoing.request_id});
-      state.pendingOutgoing=null;renderOutgoingWaiting();showToast('Request dibatalkan');
-    }catch(e){showToast(e.message||'Gagal cancel')}
-  };
+  document.getElementById('cancelOutgoingBtn').onclick=async()=>{try{await sb.rpc('cancel_trade_request',{p_request_id:state.pendingOutgoing.request_id});state.pendingOutgoing=null;renderOutgoingWaiting();showToast('Request dibatalkan')}catch(e){showToast(e.message||'Gagal cancel')}};
 }
 async function restoreTradeState(){
   if(!state.user)return;
   try{
-    const{data,error}=await sb.rpc('get_my_active_trade');
-    if(error)return;
+    const{data,error}=await sb.rpc('get_my_active_trade');if(error)return;
     if(!data){state.pendingOutgoing=null;state.currentTrade=null;renderOutgoingWaiting();document.getElementById('tradeRoomContainer').innerHTML='';return}
-    if(data.status==='pending'){
-      if(data.sender_id===state.user.id){
-        const{data:recvProf}=await sb.from('profiles').select('username').eq('id',data.receiver_id).single();
-        state.pendingOutgoing={request_id:data.request_id,username:recvProf?.username||'?'};
-        renderOutgoingWaiting();
-      } else { renderOutgoingWaiting(); }
-      state.currentTrade=null;
-      document.getElementById('tradeRoomContainer').innerHTML='';
-    } else if(data.status==='accepted' && data.trade_id){
-      state.pendingOutgoing=null;renderOutgoingWaiting();
-      state.currentTrade=data.trade_id;await refreshTradeRoom();
-    }
-  }catch(e){console.warn('restoreTradeState',e)}
+    if(data.status==='pending'){if(data.sender_id===state.user.id){const{data:rp}=await sb.from('profiles').select('username').eq('id',data.receiver_id).single();state.pendingOutgoing={request_id:data.request_id,username:rp?.username||'?'};renderOutgoingWaiting()}else{renderOutgoingWaiting()}state.currentTrade=null;document.getElementById('tradeRoomContainer').innerHTML=''}
+    else if(data.status==='accepted'&&data.trade_id){state.pendingOutgoing=null;renderOutgoingWaiting();state.currentTrade=data.trade_id;await refreshTradeRoom()}
+  }catch(e){console.warn(e)}
 }
 async function respondTrade(rid,accept){
-  try{
-    const{data,error}=await sb.rpc('respond_trade_request',{p_request_id:rid,p_accept:accept});
-    if(error)throw error;
-    if(data.accepted){state.currentTrade=data.trade_id;await openTradeRoom(data.trade_id)}
-    else{showToast('Trade ditolak');loadIncomingTrades()}
-  }catch(e){showToast(e.message||'Gagal')}
+  try{const{data,error}=await sb.rpc('respond_trade_request',{p_request_id:rid,p_accept:accept});if(error)throw error;if(data.accepted){state.currentTrade=data.trade_id;await openTradeRoom(data.trade_id)}else{showToast('Trade ditolak');loadIncomingTrades()}}catch(e){showToast(e.message||'Gagal')}
 }
 async function openTradeRoom(tradeId){state.currentTrade=tradeId;await refreshTradeRoom()}
 async function refreshTradeRoom(){
   if(!state.currentTrade){document.getElementById('tradeRoomContainer').innerHTML='';return}
   const{data:trade}=await sb.from('trades').select('*').eq('id',state.currentTrade).single();
   if(!trade){document.getElementById('tradeRoomContainer').innerHTML='';return}
-  if(trade.player_a!==state.user.id && trade.player_b!==state.user.id){document.getElementById('tradeRoomContainer').innerHTML='';state.currentTrade=null;return}
+  if(trade.player_a!==state.user.id&&trade.player_b!==state.user.id){document.getElementById('tradeRoomContainer').innerHTML='';state.currentTrade=null;return}
   const{data:items}=await sb.from('trade_items').select('*').eq('trade_id',state.currentTrade);
   const isA=trade.player_a===state.user.id;const side=isA?'a':'b';const otherSide=isA?'b':'a';
   const{data:otherProf}=await sb.from('profiles').select('username').eq('id',isA?trade.player_b:trade.player_a).single();
@@ -868,12 +981,12 @@ async function refreshTradeRoom(){
   <div class="stats-panel"><div class="stats-title">🤝 Trade Room · ${statusText}</div>
   <div class="trade-room">
   <div class="trade-side"><h3 class="you">YOU</h3>
-  ${myCards.map(c=>{const card=CARDS.find(x=>x.id===c.power_id);return card?`<div class="trade-item"><span>${escapeHtml(card.name)}</span><span class="qty">x${c.quantity}</span></div>`:''}).join('')||'<div style="font-size:10px;color:var(--muted)">Kosong</div>'}
+  ${myCards.map(c=>{const card=findCard(c.power_id);return card?`<div class="trade-item"><span>${escapeHtml(card.name)}</span><span class="qty">x${c.quantity}</span></div>`:''}).join('')||'<div style="font-size:10px;color:var(--muted)">Kosong</div>'}
   ${myCoins>0?`<div class="trade-item"><span>💰 Coins</span><span class="qty">${myCoins.toLocaleString()}</span></div>`:''}
   ${trade.status==='active'?`<div class="trade-actions"><button class="btn-ready" id="addCardBtn" style="flex:1;padding:9px;border-radius:8px;border:none;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff">+ CARD</button><button class="btn-ready" id="setCoinsBtn" style="flex:1;padding:9px;border-radius:8px;border:none;font-weight:800;font-size:11px;cursor:pointer;font-family:inherit;background:var(--card2);color:#fff">💰 COINS</button></div>`:''}
   </div>
   <div class="trade-side"><h3>${escapeHtml(otherProf?.username||'?')}</h3>
-  ${otherCards.map(c=>{const card=CARDS.find(x=>x.id===c.power_id);return card?`<div class="trade-item"><span>${escapeHtml(card.name)}</span><span class="qty">x${c.quantity}</span></div>`:''}).join('')||'<div style="font-size:10px;color:var(--muted)">Kosong</div>'}
+  ${otherCards.map(c=>{const card=findCard(c.power_id);return card?`<div class="trade-item"><span>${escapeHtml(card.name)}</span><span class="qty">x${c.quantity}</span></div>`:''}).join('')||'<div style="font-size:10px;color:var(--muted)">Kosong</div>'}
   ${otherCoins>0?`<div class="trade-item"><span>💰 Coins</span><span class="qty">${otherCoins.toLocaleString()}</span></div>`:''}
   </div></div>
   <div class="trade-ready"><span>YOU: <span class="${myReady?'yes':'no'}">${myReady?'READY':'NOT READY'}</span></span><span>OTHER: <span class="${otherReady?'yes':'no'}">${otherReady?'READY':'NOT READY'}</span></span></div>
@@ -887,54 +1000,20 @@ async function refreshTradeRoom(){
   state.pendingOutgoing=null;
   const outBox=document.getElementById('tradeOutgoing');if(outBox)outBox.innerHTML='';
 }
-async function setReady(ready){
-  try{const{error}=await sb.rpc('set_trade_ready',{p_trade_id:state.currentTrade,p_ready:ready});if(error)throw error;await refreshTradeRoom()}
-  catch(e){showToast(e.message||'Gagal')}
-}
-async function confirmTrade(){
-  try{
-    const{data,error}=await sb.rpc('confirm_trade',{p_trade_id:state.currentTrade});if(error)throw error;
-    if(data.status==='waiting')showToast('Menunggu konfirmasi lawan...');
-    else if(data.status==='completed'){showToast('✅ Trade selesai!');state.currentTrade=null;await loadCloudState();updateUI();renderIndex();loadTradeHistory();document.getElementById('tradeRoomContainer').innerHTML=''}
-    else if(data.status==='failed'){showToast('❌ Trade gagal: '+data.reason);state.currentTrade=null;await refreshTradeRoom()}
-  }catch(e){showToast(e.message||'Gagal')}
-}
-async function cancelTrade(){
-  try{await sb.rpc('cancel_trade',{p_trade_id:state.currentTrade});state.currentTrade=null;document.getElementById('tradeRoomContainer').innerHTML='';loadIncomingTrades()}
-  catch(e){showToast(e.message||'Gagal')}
-}
-function openCoinsModal(){
-  const inp=document.getElementById('coinsInput');inp.value=0;inp.max=state.stats.money||0;
-  document.getElementById('coinsModal').classList.add('show');
-  document.getElementById('confirmCoins').onclick=async()=>{
-    const n=parseInt(inp.value)||0;
-    try{
-      const{error}=await sb.rpc('update_trade_coins',{p_trade_id:state.currentTrade,p_coins:n});
-      if(error)throw error;
-      document.getElementById('coinsModal').classList.remove('show');await refreshTradeRoom();
-    }catch(e){showToast(e.message||'Gagal')}
-  };
-}
+async function setReady(ready){try{const{error}=await sb.rpc('set_trade_ready',{p_trade_id:state.currentTrade,p_ready:ready});if(error)throw error;await refreshTradeRoom()}catch(e){showToast(e.message||'Gagal')}}
+async function confirmTrade(){try{const{data,error}=await sb.rpc('confirm_trade',{p_trade_id:state.currentTrade});if(error)throw error;if(data.status==='waiting')showToast('Menunggu konfirmasi lawan...');else if(data.status==='completed'){showToast('✅ Trade selesai!');state.currentTrade=null;await loadCloudState();updateUI();renderIndex();loadTradeHistory();document.getElementById('tradeRoomContainer').innerHTML=''}else if(data.status==='failed'){showToast('❌ Trade gagal: '+data.reason);state.currentTrade=null;await refreshTradeRoom()}}catch(e){showToast(e.message||'Gagal')}}
+async function cancelTrade(){try{await sb.rpc('cancel_trade',{p_trade_id:state.currentTrade});state.currentTrade=null;document.getElementById('tradeRoomContainer').innerHTML='';loadIncomingTrades()}catch(e){showToast(e.message||'Gagal')}}
+function openCoinsModal(){const inp=document.getElementById('coinsInput');inp.value=0;inp.max=state.stats.money||0;document.getElementById('coinsModal').classList.add('show');document.getElementById('confirmCoins').onclick=async()=>{const n=parseInt(inp.value)||0;try{const{error}=await sb.rpc('update_trade_coins',{p_trade_id:state.currentTrade,p_coins:n});if(error)throw error;document.getElementById('coinsModal').classList.remove('show');await refreshTradeRoom()}catch(e){showToast(e.message||'Gagal')}};}
 document.getElementById('closeCoinsModal').onclick=()=>document.getElementById('coinsModal').classList.remove('show');
 function openCardPicker(){
   const inv=Object.entries(state.inventory).filter(([_,v])=>v.quantity>0);
   const list=document.getElementById('cardPickerList');
-  list.innerHTML=inv.length===0?'<div style="padding:20px;text-align:center;color:var(--muted)">Belum ada kartu</div>':inv.map(([pid,v])=>{
-    const card=CARDS.find(c=>c.id===parseInt(pid));if(!card)return '';
-    return`<div class="pick-item"><span>${escapeHtml(card.name)} <small style="color:var(--muted)">x${v.quantity}</small></span><div class="qty-ctrl"><button data-act="minus">−</button><input type="number" value="0" min="0" max="${v.quantity}" data-pid="${pid}"><button data-act="plus">+</button></div></div>`;
-  }).join('');
-  list.querySelectorAll('button').forEach(b=>{
-    b.onclick=()=>{const inp=b.parentElement.querySelector('input');const cur=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(b.dataset.act==='plus')inp.value=Math.min(cur+1,max);else inp.value=Math.max(cur-1,0);updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
-  });
-  list.querySelectorAll('input').forEach(inp=>{
-    inp.onchange=()=>{const v=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(v>max)inp.value=max;if(v<0)inp.value=0;updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value));};
-  });
+  list.innerHTML=inv.length===0?'<div style="padding:20px;text-align:center;color:var(--muted)">Belum ada kartu</div>':inv.map(([pid,v])=>{const card=findCard(parseInt(pid));if(!card)return '';return`<div class="pick-item"><span>${escapeHtml(card.name)} <small style="color:var(--muted)">x${v.quantity}</small></span><div class="qty-ctrl"><button data-act="minus">−</button><input type="number" value="0" min="0" max="${v.quantity}" data-pid="${pid}"><button data-act="plus">+</button></div></div>`}).join('');
+  list.querySelectorAll('button').forEach(b=>{b.onclick=()=>{const inp=b.parentElement.querySelector('input');const cur=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(b.dataset.act==='plus')inp.value=Math.min(cur+1,max);else inp.value=Math.max(cur-1,0);updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value))}});
+  list.querySelectorAll('input').forEach(inp=>{inp.onchange=()=>{const v=parseInt(inp.value)||0;const max=parseInt(inp.max)||0;if(v>max)inp.value=max;if(v<0)inp.value=0;updateTradeItem(parseInt(inp.dataset.pid),parseInt(inp.value))}});
   document.getElementById('cardPickerModal').classList.add('show');
 }
-async function updateTradeItem(powerId,qty){
-  try{const{error}=await sb.rpc('update_trade_offer',{p_trade_id:state.currentTrade,p_power_id:powerId,p_quantity:qty});if(error)throw error;await refreshTradeRoom()}
-  catch(e){showToast(e.message||'Gagal')}
-}
+async function updateTradeItem(powerId,qty){try{const{error}=await sb.rpc('update_trade_offer',{p_trade_id:state.currentTrade,p_power_id:powerId,p_quantity:qty});if(error)throw error;await refreshTradeRoom()}catch(e){showToast(e.message||'Gagal')}}
 document.getElementById('closeCardPicker').onclick=()=>document.getElementById('cardPickerModal').classList.remove('show');
 async function loadTradeHistory(){
   if(!state.user)return;
@@ -944,46 +1023,37 @@ async function loadTradeHistory(){
   const otherIds=data.map(t=>t.player_a===state.user.id?t.player_b:t.player_a);
   const{data:profs}=await sb.from('profiles').select('id,username').in('id',[...new Set(otherIds)]);
   const nameMap={};(profs||[]).forEach(p=>nameMap[p.id]=p.username);
-  el.innerHTML=data.map(t=>{
-    const otherId=t.player_a===state.user.id?t.player_b:t.player_a;
-    const otherName=nameMap[otherId]||'User_'+otherId.slice(0,6);
-    const st={completed:'✅',cancelled:'❌',failed:'⚠️',active:'🟢'}[t.status]||'';
-    return`<div style="padding:6px 0;border-bottom:1px solid var(--border)">${st} Trade vs ${escapeHtml(otherName)} · ${t.status}</div>`;
-  }).join('');
+  el.innerHTML=data.map(t=>{const otherId=t.player_a===state.user.id?t.player_b:t.player_a;const otherName=nameMap[otherId]||'User_'+otherId.slice(0,6);const st={completed:'✅',cancelled:'❌',failed:'⚠️',active:'🟢'}[t.status]||'';return`<div style="padding:6px 0;border-bottom:1px solid var(--border)">${st} Trade vs ${escapeHtml(otherName)} · ${t.status}</div>`}).join('');
 }
 
-// ══════════════════════════════════════════════════════
-// AUCTION
-// ══════════════════════════════════════════════════════
+// ═════ AUCTION ═════
 async function loadAuctions(){
   const{data}=await sb.from('auction_listings').select('*').eq('status','active').order('ends_at',{ascending:true}).limit(50);
   state.auctions=data||[];
-  const sellerIds=[...new Set((data||[]).map(a=>a.seller_id))];
-  const bidderIds=[...new Set((data||[]).filter(a=>a.highest_bidder_id).map(a=>a.highest_bidder_id))];
-  const allIds=[...new Set([...sellerIds,...bidderIds])];
-  if(allIds.length){
-    const{data:profs}=await sb.from('profiles').select('id,username').in('id',allIds);
-    state.auctionNames={};(profs||[]).forEach(p=>state.auctionNames[p.id]=p.username);
-  } else {state.auctionNames={}}
+  const allIds=[...new Set([...(data||[]).map(a=>a.seller_id),...(data||[]).filter(a=>a.highest_bidder_id).map(a=>a.highest_bidder_id)])];
+  if(allIds.length){const{data:profs}=await sb.from('profiles').select('id,username').in('id',allIds);state.auctionNames={};(profs||[]).forEach(p=>state.auctionNames[p.id]=p.username)}
+  else{state.auctionNames={}}
   renderAuctions();
 }
 function renderAuctions(){
   const grid=document.getElementById('auctionGrid');
   if(!state.auctions||state.auctions.length===0){grid.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Belum ada auction aktif</div>';return}
   grid.innerHTML=state.auctions.map(a=>{
-    const card=CARDS.find(c=>c.id===a.power_id);if(!card)return '';
-    const rar=RARITIES.find(r=>r.id===card.rarity);const endsAt=new Date(a.ends_at).getTime();const left=endsAt-Date.now();const urgent=left<30000;
-    const hsh=hashStr(card.name+card.id);const shift=(hsh%60)-30;const c1=`hsl(${(CAT_HUE[card.category]+shift+360)%360},75%,55%)`,c2=`hsl(${(CAT_HUE[card.category]+shift+20+360)%360},65%,30%)`,c3=`hsl(${(CAT_HUE[card.category]+shift-20+360)%360},55%,12%)`;
+    const card=findCard(a.power_id);if(!card)return '';
+    const endsAt=new Date(a.ends_at).getTime();const left=endsAt-Date.now();const urgent=left<30000;const expired=left<=0;
+    const cat=CATEGORIES.find(x=>x.id===card.category);
+    const baseHue=cat?CAT_HUE[card.category]:25;
+    const hsh=hashStr(card.name+(card.id||0));const shift=(hsh%60)-30;
+    const c1=`hsl(${(baseHue+shift+360)%360},75%,55%)`,c2=`hsl(${(baseHue+shift+20+360)%360},65%,30%)`,c3=`hsl(${(baseHue+shift-20+360)%360},55%,12%)`;
     const isSeller=a.seller_id===state.user?.id;const hasBid=a.highest_bidder_id!==null;
     const bidderName=a.highest_bidder_id?(state.auctionNames?.[a.highest_bidder_id]||'User'):'—';
-    return`<div class="auction-card ${urgent?'ending-soon':''}"><div class="art" style="background:radial-gradient(ellipse at 50% 40%,${c1} 0%,${c2} 45%,${c3} 100%)"><div class="symbol">${card.symbol}</div></div><div class="title">${escapeHtml(card.name)}</div><div class="qty-label">x${a.quantity} · ${escapeHtml(rar.name)} · 1 in ${card.chance.toLocaleString()}</div><div class="bid-info">Bid: <span class="val">💰 ${(a.current_bid||a.starting_price).toLocaleString()}</span></div><div class="bid-info" style="font-size:9px">Seller: ${escapeHtml(state.auctionNames?.[a.seller_id]||'?')} · Bidder: ${escapeHtml(bidderName)}</div><div class="time ${urgent?'urgent':''}" data-end="${endsAt}">${fmtCountdown(endsAt)}</div>${!isSeller?`<button class="bid-btn" data-aid="${a.id}" data-min="${Math.max(a.current_bid+1,a.starting_price)}">BID</button>`:''}${isSeller&&!hasBid?`<button class="cancel-btn" data-cancel="${a.id}">CANCEL</button>`:''}</div>`;
+    return`<div class="auction-card ${urgent&&!expired?'ending-soon':''} ${expired?'settling':''}"><div class="art" style="background:radial-gradient(ellipse at 50% 40%,${c1} 0%,${c2} 45%,${c3} 100%)"><div class="symbol">${card.symbol||'?'}</div></div><div class="title">${escapeHtml(card.name)}</div><div class="qty-label">x${a.quantity} · 1 in ${card.chance.toLocaleString()}</div><div class="bid-info">Bid: <span class="val">💰 ${(a.current_bid||a.starting_price).toLocaleString()}</span></div><div class="bid-info" style="font-size:9px">Seller: ${escapeHtml(state.auctionNames?.[a.seller_id]||'?')} · Bidder: ${escapeHtml(bidderName)}</div><div class="time ${urgent&&!expired?'urgent':''}" data-end="${endsAt}">${expired?'SETTLING...':fmtCountdown(endsAt)}</div>${!expired?(!isSeller?`<button class="bid-btn" data-aid="${a.id}" data-min="${Math.max(a.current_bid+1,a.starting_price)}">BID</button>`:''):''}${isSeller&&!hasBid&&!expired?`<button class="cancel-btn" data-cancel="${a.id}">CANCEL</button>`:''}</div>`;
   }).join('');
   grid.querySelectorAll('.bid-btn').forEach(b=>{b.onclick=()=>openBidModal(b.dataset.aid,parseInt(b.dataset.min))});
-  grid.querySelectorAll('.cancel-btn').forEach(b=>{b.onclick=async()=>{
-    if(!confirm('Cancel auction? Fee 200 tidak refund.'))return;
-    try{await sb.rpc('cancel_auction',{p_auction_id:b.dataset.cancel});showToast('Auction cancelled');await loadCloudState();updateUI();loadAuctions()}
-    catch(e){showToast(e.message||'Gagal')}
-  }});
+  grid.querySelectorAll('.cancel-btn').forEach(b=>{b.onclick=async()=>{if(!confirm('Cancel auction? Fee 200 tidak refund.'))return;try{await sb.rpc('cancel_auction',{p_auction_id:b.dataset.cancel});showToast('Auction cancelled');await loadCloudState();updateUI();loadAuctions()}catch(e){showToast(e.message||'Gagal')}}});
+}
+async function settleExpiredAuctions(){
+  try{const{data,error}=await sb.rpc('settle_expired_auctions');if(error)console.warn(error.message);if(data&&data.settled>0){loadAuctions();loadCloudState().then(()=>{updateUI();renderIndex()})}}catch(e){console.warn(e)}
 }
 function openBidModal(aid,minBid){
   document.getElementById('bidInfo').innerHTML=`Min bid: <b style="color:var(--money)">💰 ${minBid.toLocaleString()}</b><br>Available: <b style="color:var(--luck)">💰 ${(state.stats.money||0).toLocaleString()}</b>`;
@@ -991,12 +1061,7 @@ function openBidModal(aid,minBid){
   document.getElementById('bidModal').classList.add('show');
   document.getElementById('confirmBid').onclick=async()=>{
     const amt=parseInt(inp.value);if(isNaN(amt)||amt<minBid){showToast('Bid terlalu rendah');return}
-    try{
-      const{error}=await sb.rpc('place_bid',{p_auction_id:aid,p_amount:amt});
-      if(error)throw error;
-      showToast('✅ Bid berhasil!');document.getElementById('bidModal').classList.remove('show');
-      await loadCloudState();updateUI();loadAuctions();
-    }catch(e){showToast(e.message||'Gagal bid')}
+    try{const{error}=await sb.rpc('place_bid',{p_auction_id:aid,p_amount:amt});if(error)throw error;showToast('✅ Bid berhasil!');document.getElementById('bidModal').classList.remove('show');await loadCloudState();updateUI();loadAuctions()}catch(e){showToast(e.message||'Gagal bid')}
   };
 }
 document.getElementById('closeBidModal').onclick=()=>document.getElementById('bidModal').classList.remove('show');
@@ -1004,7 +1069,7 @@ document.getElementById('openCreateAuctionBtn').onclick=()=>{
   const sel=document.getElementById('auctionCardSelect');
   const inv=Object.entries(state.inventory).filter(([_,v])=>v.quantity>0);
   if(inv.length===0){showToast('Belum ada kartu');return}
-  sel.innerHTML=inv.map(([pid,v])=>{const card=CARDS.find(c=>c.id===parseInt(pid));return card?`<option value="${pid}">${escapeHtml(card.name)} (x${v.quantity})</option>`:''}).join('');
+  sel.innerHTML=inv.map(([pid,v])=>{const card=findCard(parseInt(pid));return card?`<option value="${pid}">${escapeHtml(card.name)} (x${v.quantity})</option>`:''}).join('');
   document.getElementById('createAuctionModal').classList.add('show');
 };
 document.getElementById('closeAuctionModal').onclick=()=>document.getElementById('createAuctionModal').classList.remove('show');
@@ -1012,144 +1077,58 @@ document.getElementById('confirmCreateAuction').onclick=async()=>{
   const sel=document.getElementById('auctionCardSelect');const pid=parseInt(sel.value);
   const qty=parseInt(document.getElementById('auctionQty').value);const price=parseInt(document.getElementById('auctionPrice').value);
   if(!pid||!qty||qty<1||!price||price<1){showToast('Input tidak valid');return}
-  try{
-    const{error}=await sb.rpc('create_auction',{p_power_id:pid,p_quantity:qty,p_starting_price:price});
-    if(error)throw error;
-    showToast('✅ Auction dibuat!');document.getElementById('createAuctionModal').classList.remove('show');
-    await loadCloudState();updateUI();renderIndex();await loadAuctions();
-  }catch(e){showToast(e.message||'Gagal')}
+  try{const{error}=await sb.rpc('create_auction',{p_power_id:pid,p_quantity:qty,p_starting_price:price});if(error)throw error;showToast('✅ Auction dibuat!');document.getElementById('createAuctionModal').classList.remove('show');await loadCloudState();updateUI();renderIndex();await loadAuctions()}catch(e){showToast(e.message||'Gagal')}
 };
-
-// ══════════════════════════════════════════════════════
-// REALTIME
-// ══════════════════════════════════════════════════════
-let channel=null,tradeChannel=null,auctionChannel=null;
-function subscribeRealtime(){
-  if(channel)sb.removeChannel(channel);
-  channel=sb.channel('drops-ch').on('postgres_changes',{event:'INSERT',schema:'public',table:'drops'},payload=>{
-    const d=payload.new;if(!d)return;if(d.user_id===state.user?.id)return;if(d.power_chance<3000)return;
-    showToast(`✨ RARE DROP!\n${d.username} got "${d.power_name}"\n1 in ${d.power_chance.toLocaleString()}`,'rare');
-  }).subscribe();
+function showAuctionWin(card,price){
+  const modal=document.getElementById('auctionWinModal');
+  document.getElementById('auctionWinCard').innerHTML=cardHTML(card,{large:true,qty:quantityOf(card.id)});
+  modal.classList.add('show');
+  spawnParticles(80,'#fbbf24',1.5);spawnParticles(50,'#f472b6',1.2);
+  playRaritySound(5);
+  document.getElementById('auctionWinContinue').onclick=()=>{modal.classList.remove('show')};
+  setTimeout(()=>{if(modal.classList.contains('show'))modal.classList.remove('show')},8000);
 }
+
+// ═════ REALTIME ═════
+let channel=null,tradeChannel=null,auctionChannel=null;
+function subscribeRealtime(){if(channel)sb.removeChannel(channel);channel=sb.channel('drops-ch').on('postgres_changes',{event:'INSERT',schema:'public',table:'drops'},payload=>{const d=payload.new;if(!d)return;if(d.user_id===state.user?.id)return;if(d.power_chance<3000)return;showToast(`✨ RARE DROP!\n${d.username} got "${d.power_name}"\n1 in ${d.power_chance.toLocaleString()}`,'rare')}).subscribe()}
 function subscribeTradeRealtime(){
   if(tradeChannel)sb.removeChannel(tradeChannel);
   tradeChannel=sb.channel('trade-ch')
-  // Trade request baru masuk (kita receiver)
-  .on('postgres_changes',{event:'INSERT',schema:'public',table:'trade_requests',filter:`receiver_id=eq.${state.user.id}`},async payload=>{
-    const r=payload.new;if(!r||r.status!=='pending')return;
-    const{data:prof}=await sb.from('profiles').select('username').eq('id',r.sender_id).single();
-    showToastWithActions(`🤝 Trade Request dari ${prof?.username||'?'}`, 'trade',
-      [{label:'TERIMA',act:()=>respondTrade(r.id,true)},{label:'TOLAK',act:()=>respondTrade(r.id,false)}]);
-    loadIncomingTrades();
-  })
-  // UPDATE trade request — untuk SENDER + RECEIVER
-  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'trade_requests'},async payload=>{
-    const r=payload.new;if(!r)return;
-    const isSender=r.sender_id===state.user.id;
-    const isReceiver=r.receiver_id===state.user.id;
-    if(!isSender && !isReceiver) return;
-    if(r.status==='accepted' && r.trade_id){
-      state.pendingOutgoing=null;renderOutgoingWaiting();
-      state.currentTrade=r.trade_id;await refreshTradeRoom();
-      const tradeTab=document.querySelector('[data-tab="trade"]');
-      if(tradeTab && !document.getElementById('pane-trade').classList.contains('active')){
-        tradeTab.click();
-      }
-      showToast('✅ Trade dimulai!');
-    }
-    else if(r.status==='rejected'){
-      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting();showToast('❌ Trade ditolak')}
-    }
-    else if(r.status==='cancelled'){
-      loadIncomingTrades();
-      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}
-    }
-    else if(r.status==='expired'){
-      loadIncomingTrades();
-      if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}
-    }
-  })
-  // Trades table (untuk completed/cancelled)
-  .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async payload=>{
-    const t=payload.new;if(!t)return;
-    const isPlayer=(t.player_a===state.user.id || t.player_b===state.user.id);
-    if(!isPlayer) return;
-    if(t.id!==state.currentTrade){
-      if(t.status==='active'){state.currentTrade=t.id;await refreshTradeRoom()}
-      return;
-    }
-    if(t.status==='completed'){
-      showToast('✅ Trade selesai!');
-      state.currentTrade=null;
-      await loadCloudState();updateUI();renderIndex();loadTradeHistory();
-      document.getElementById('tradeRoomContainer').innerHTML='';
-    }
-    else if(t.status==='cancelled'){
-      showToast('Trade dibatalkan');
-      state.currentTrade=null;
-      document.getElementById('tradeRoomContainer').innerHTML='';
-    }
-    else { await refreshTradeRoom() }
-  })
-  // trade_items
-  .on('postgres_changes',{event:'*',schema:'public',table:'trade_items'},payload=>{
-    const t=payload.new||payload.old;if(!t||t.trade_id!==state.currentTrade)return;
-    refreshTradeRoom();
-  }).subscribe();
+  .on('postgres_changes',{event:'INSERT',schema:'public',table:'trade_requests',filter:`receiver_id=eq.${state.user.id}`},async payload=>{const r=payload.new;if(!r||r.status!=='pending')return;const{data:prof}=await sb.from('profiles').select('username').eq('id',r.sender_id).single();showToastWithActions(`🤝 Trade Request dari ${prof?.username||'?'}`,'trade',[{label:'TERIMA',act:()=>respondTrade(r.id,true)},{label:'TOLAK',act:()=>respondTrade(r.id,false)}]);loadIncomingTrades()})
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'trade_requests'},async payload=>{const r=payload.new;if(!r)return;const isSender=r.sender_id===state.user.id;const isReceiver=r.receiver_id===state.user.id;if(!isSender&&!isReceiver)return;if(r.status==='accepted'&&r.trade_id){state.pendingOutgoing=null;renderOutgoingWaiting();state.currentTrade=r.trade_id;await refreshTradeRoom();const tradeTab=document.querySelector('[data-tab="trade"]');if(tradeTab&&!document.getElementById('pane-trade').classList.contains('active'))tradeTab.click();showToast('✅ Trade dimulai!')}else if(r.status==='rejected'){if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting();showToast('❌ Trade ditolak')}}else if(r.status==='cancelled'){loadIncomingTrades();if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}}else if(r.status==='expired'){loadIncomingTrades();if(isSender){state.pendingOutgoing=null;renderOutgoingWaiting()}}})
+  .on('postgres_changes',{event:'*',schema:'public',table:'trades'},async payload=>{const t=payload.new;if(!t)return;const isPlayer=(t.player_a===state.user.id||t.player_b===state.user.id);if(!isPlayer)return;if(t.id!==state.currentTrade){if(t.status==='active'){state.currentTrade=t.id;await refreshTradeRoom()}return}if(t.status==='completed'){showToast('✅ Trade selesai!');state.currentTrade=null;await loadCloudState();updateUI();renderIndex();loadTradeHistory();document.getElementById('tradeRoomContainer').innerHTML=''}else if(t.status==='cancelled'){showToast('Trade dibatalkan');state.currentTrade=null;document.getElementById('tradeRoomContainer').innerHTML=''}else{await refreshTradeRoom()}})
+  .on('postgres_changes',{event:'*',schema:'public',table:'trade_items'},payload=>{const t=payload.new||payload.old;if(!t||t.trade_id!==state.currentTrade)return;refreshTradeRoom()}).subscribe();
 }
 function subscribeAuctionRealtime(){
   if(auctionChannel)sb.removeChannel(auctionChannel);
   auctionChannel=sb.channel('auction-ch')
-  .on('postgres_changes',{event:'*',schema:'public',table:'auction_listings'},payload=>{
+  .on('postgres_changes',{event:'*',schema:'public',table:'auction_listings'},async payload=>{
     const a=payload.new;
-    if(a&&a.highest_bidder_id&&a.highest_bidder_id===state.user?.id&&payload.old&&payload.old.highest_bidder_id!==state.user?.id){
-      showToast('🔨 You are the highest bidder!','auction');
+    if(a&&a.status==='sold'&&a.highest_bidder_id===state.user?.id&&!state.seenSettled[a.id]){
+      state.seenSettled[a.id]=true;
+      await loadCloudState();updateUI();renderIndex();
+      const card=findCard(a.power_id);
+      if(card)showAuctionWin(card,a.current_bid);
     }
+    if(a&&a.highest_bidder_id===state.user?.id&&payload.old&&payload.old.highest_bidder_id!==state.user?.id)showToast('🔨 You are the highest bidder!','auction');
     loadAuctions();
   })
   .on('postgres_changes',{event:'INSERT',schema:'public',table:'auction_bids'},payload=>{loadAuctions()}).subscribe();
 }
 
-// ══════════════════════════════════════════════════════
-// TOAST + UTIL
-// ══════════════════════════════════════════════════════
-function showToast(text,cls){
-  let c=document.getElementById('toastContainer');if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}
-  const el=document.createElement('div');el.className='toast'+(cls?' '+cls:'');el.innerHTML=text.replace(/\n/g,'<br>');c.appendChild(el);
-  setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateY(-20px)';setTimeout(()=>el.remove(),400)},5000);
-}
-function showToastWithActions(text,cls,actions){
-  let c=document.getElementById('toastContainer');if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}
-  const el=document.createElement('div');el.className='toast'+(cls?' '+cls:'');el.innerHTML=text.replace(/\n/g,'<br>');
-  const acts=document.createElement('div');acts.className='toast-actions';
-  actions.forEach(a=>{const b=document.createElement('button');b.textContent=a.label;b.className=a.label==='TERIMA'?'btn-yes':'btn-no';b.onclick=()=>{a.act();el.remove()};acts.appendChild(b)});
-  el.appendChild(acts);c.appendChild(el);
-  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400)},15000);
-}
+// ═════ TOAST + UTIL ═════
+function showToast(text,cls){let c=document.getElementById('toastContainer');if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}const el=document.createElement('div');el.className='toast'+(cls?' '+cls:'');el.innerHTML=text.replace(/\n/g,'<br>');c.appendChild(el);setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateY(-20px)';setTimeout(()=>el.remove(),400)},5000)}
+function showToastWithActions(text,cls,actions){let c=document.getElementById('toastContainer');if(!c){c=document.createElement('div');c.id='toastContainer';c.className='toast-container';document.body.appendChild(c)}const el=document.createElement('div');el.className='toast'+(cls?' '+cls:'');el.innerHTML=text.replace(/\n/g,'<br>');const acts=document.createElement('div');acts.className='toast-actions';actions.forEach(a=>{const b=document.createElement('button');b.textContent=a.label;b.className=a.label==='TERIMA'?'btn-yes':'btn-no';b.onclick=()=>{a.act();el.remove()};acts.appendChild(b)});el.appendChild(acts);c.appendChild(el);setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400)},15000)}
 function showLuckFloat(l,m){const el=document.createElement('div');el.className='luck-float';el.textContent=`🍀 +${l}${m?' 💰 +'+m:''}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1900)}
 let audioCtx=null;
-function beep(freq,dur=0.08,type='sine',vol=0.05){
-  if(state.muted)return;
-  try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.type=type;o.frequency.value=freq;g.gain.value=vol;
-    g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
-    o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur);
-  }catch(e){}
-}
+function beep(freq,dur=0.08,type='sine',vol=0.05){if(state.muted)return;try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur)}catch(e){}}
 function playRaritySound(t){const b=300+t*100;beep(b,.1,'triangle',.06);setTimeout(()=>beep(b*1.5,.15,'triangle',.05),80);if(t>=4)setTimeout(()=>beep(b*2,.25,'sine',.07),180);if(t>=8){setTimeout(()=>beep(b*3,.6,'sine',.1),450)}}
-function spawnParticles(count,color,speed=1){
-  const c=document.getElementById('particles');const cx=window.innerWidth/2,cy=window.innerHeight/2;
-  for(let i=0;i<count;i++){const p=document.createElement('div');p.className='particle';
-    const a=Math.random()*Math.PI*2;const d=(80+Math.random()*250)*speed;
-    p.style.left=cx+'px';p.style.top=cy+'px';p.style.setProperty('--px',Math.cos(a)*d+'px');p.style.setProperty('--py',Math.sin(a)*d+'px');
-    p.style.background=color;p.style.boxShadow=`0 0 10px ${color}`;p.style.width=p.style.height=(3+Math.random()*6)+'px';p.style.animationDuration=(0.8+Math.random()*1.2)+'s';
-    c.appendChild(p);setTimeout(()=>p.remove(),2200)}
-}
+function playSecretSound(){const notes=[261,329,392,523,659,784,1047];notes.forEach((n,i)=>setTimeout(()=>beep(n,.4,'sine',.12),i*180));setTimeout(()=>beep(1568,1,'triangle',.1),1500)}
+function spawnParticles(count,color,speed=1){const c=document.getElementById('particles');const cx=window.innerWidth/2,cy=window.innerHeight/2;for(let i=0;i<count;i++){const p=document.createElement('div');p.className='particle';const a=Math.random()*Math.PI*2;const d=(80+Math.random()*250)*speed;p.style.left=cx+'px';p.style.top=cy+'px';p.style.setProperty('--px',Math.cos(a)*d+'px');p.style.setProperty('--py',Math.sin(a)*d+'px');p.style.background=color;p.style.boxShadow=`0 0 10px ${color}`;p.style.width=p.style.height=(3+Math.random()*6)+'px';p.style.animationDuration=(0.8+Math.random()*1.2)+'s';c.appendChild(p);setTimeout(()=>p.remove(),2200)}}
 
-// ══════════════════════════════════════════════════════
-// EVENTS
-// ══════════════════════════════════════════════════════
+// ═════ TABS ═════
+function switchTab(name){const t=document.querySelector('[data-tab="'+name+'"]');if(t)t.click()}
 document.querySelectorAll('.tab').forEach(t=>{
   t.onclick=()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
@@ -1160,24 +1139,23 @@ document.querySelectorAll('.tab').forEach(t=>{
     if(t.dataset.tab==='shop'){refreshShopIfNeeded();renderShop()}
     if(t.dataset.tab==='lb')loadLeaderboard();
     if(t.dataset.tab==='trade'){loadIncomingTrades();restoreTradeState();loadTradeHistory()}
-    if(t.dataset.tab==='auction')loadAuctions();
+    if(t.dataset.tab==='auction'){loadAuctions();settleExpiredAuctions()}
   };
 });
 document.getElementById('rollBtn').onclick=performRoll;
 document.getElementById('openPackBtn').onclick=openLimitedPack;
 document.getElementById('sendTradeBtn').onclick=sendTradeRequest;
-document.getElementById('muteBtn').onclick=async function(){state.muted=!state.muted;this.textContent=state.muted?'🔇':'🔊';if(state.user)await sb.from('user_settings').upsert({user_id:state.user.id,sound_enabled:!state.muted,updated_at:new Date().toISOString()})};
-document.getElementById('userChip').onclick=()=>{if(confirm('Logout?'))sb.auth.signOut().then(()=>location.reload())};
+document.getElementById('muteBtn').onclick=async function(){state.muted=!state.muted;this.textContent=state.muted?'🔇':'🔊';if(state.user){try{await sb.from('user_settings').upsert({user_id:state.user.id,sound_enabled:!state.muted,updated_at:new Date().toISOString()})}catch(e){console.warn(e)}}};
+document.getElementById('userChip').onclick=()=>{if(confirm('Logout?')){state.autoRolling=false;sb.auth.signOut().then(()=>location.reload())}};
 document.getElementById('searchBox').oninput=e=>{idx.search=e.target.value;idx.shown=30;renderIndex()};
 document.getElementById('hideLockedBtn').onclick=function(){idx.hideLocked=!idx.hideLocked;this.classList.toggle('active',idx.hideLocked);idx.shown=30;renderIndex()};
 document.getElementById('loadMoreBtn').onclick=()=>{idx.shown+=30;renderIndex()};
 document.getElementById('refreshShopBtn').onclick=()=>{if(state.shopRefreshAt>Date.now()){showToast('Tunggu '+fmtTime(state.shopRefreshAt-Date.now()));return}refreshShopIfNeeded(true);showToast('Shop refreshed')};
 const rarSel=document.getElementById('filterRar');RARITIES.forEach(r=>{const o=document.createElement('option');o.value=r.id;o.textContent=r.name;rarSel.appendChild(o)});
+{const o1=document.createElement('option');o1.value='limited';o1.textContent='Limited';rarSel.appendChild(o1);const o2=document.createElement('option');o2.value='secret';o2.textContent='Secret';rarSel.appendChild(o2)}
 rarSel.onchange=e=>{idx.rar=e.target.value;idx.shown=30;renderIndex()};
 
-// ══════════════════════════════════════════════════════
-// TIMER
-// ══════════════════════════════════════════════════════
+// ═════ TIMER ═════
 let questTimerInterval=null;
 function startQuestTimer(){
   if(questTimerInterval)clearInterval(questTimerInterval);
@@ -1187,20 +1165,19 @@ function startQuestTimer(){
     if(left<=0){checkQuestReset();renderQuests();updateUI()}
     const shopLeft=state.shopRefreshAt-Date.now();
     const st=document.getElementById('shopTimer');if(st)st.textContent=shopLeft>0?fmtTime(shopLeft):'READY';
-    document.querySelectorAll('.auction-card .time[data-end]').forEach(el=>{const end=parseInt(el.dataset.end);el.textContent=fmtCountdown(end);el.classList.toggle('urgent',end-Date.now()<30000)});
+    document.querySelectorAll('.auction-card .time[data-end]').forEach(el=>{const end=parseInt(el.dataset.end);if(end<=Date.now()){el.textContent='SETTLING...'}else{el.textContent=fmtCountdown(end);el.classList.toggle('urgent',end-Date.now()<30000)}});
   },1000);
+  setInterval(()=>{const pane=document.getElementById('pane-auction');if(pane&&pane.classList.contains('active'))settleExpiredAuctions()},5000);
 }
 
-// ══════════════════════════════════════════════════════
-// BOOT
-// ══════════════════════════════════════════════════════
+// ═════ BOOT ═════
 (async function boot(){
   const{data:{session}}=await sb.auth.getSession();
   if(session)await onLoginSuccess();
   else authModal.classList.add('show');
   sb.auth.onAuthStateChange((e)=>{if(e==='SIGNED_OUT')location.reload()});
 })();
-window.__PR={CARDS,state,sb};
+window.__PR={CARDS,LIMITED_CARDS,ALL_CARDS,state,sb};
 </script>
 </body>
 </html>
