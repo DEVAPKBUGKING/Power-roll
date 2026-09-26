@@ -516,13 +516,44 @@ document.getElementById('signupBtn').onclick=async()=>{
   btn.disabled=false;btn.textContent='CREATE ACCOUNT';
 };
 document.getElementById('loginBtn').onclick=async()=>{
-  const u=document.getElementById('loginUser').value.trim();const p=document.getElementById('loginPass').value;
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
   if(!u||!p){showAuthErr('Isi username dan password');return}
   const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='LOGGING IN...';
   try{
-    const{data,error}=await sb.auth.signInWithPassword({email:syntheticEmail(u),password:p});
-    if(error){console.warn('[Login] error:',error.message);throw new Error(error.message)}
-    if(!data.session)throw new Error('Session tidak diterima. Coba lagi.');
+    // Coba multiple email format (backward compat dengan akun lama)
+    const cleanU = u.toLowerCase().replace(/[^a-z0-9_]/g,'');
+    const formats = [
+      cleanU + '@regal-account.com',        // format baru (2024+)
+      u.toLowerCase() + '@power-rolling.local',  // format lama (legacy)
+      cleanU + '@power-rolling.local',      // legacy cleaned
+      u.toLowerCase() + '@regal-account.com',    // fallback
+    ];
+    let lastErr = null;
+    let success = null;
+    for(const email of formats){
+      const {data,error} = await sb.auth.signInWithPassword({email,password:p});
+      if(!error && data?.session){ success = data; break; }
+      lastErr = error;
+      console.log('[Login] Coba email:', email, '→', error?.message);
+      // Kalau bukan invalid credentials (misal confirm email), stop looping
+      if(error && !error.message.toLowerCase().includes('invalid login')){
+        break;
+      }
+    }
+    if(!success){
+      throw new Error(lastErr?.message || 'Invalid login credentials');
+    }
+    // Pastikan profile ada (self-heal kalau profile belum terbuat)
+    try{
+      const {data:prof} = await sb.from('profiles').select('id').eq('id',success.user.id).maybeSingle();
+      if(!prof){
+        console.log('[Login] Profile tidak ada, membuat...');
+        await sb.from('profiles').insert({id:success.user.id,username:u,username_lower:u.toLowerCase()});
+        try{await sb.from('game_stats').insert({user_id:success.user.id})}catch(e){}
+        try{await sb.from('user_settings').insert({user_id:success.user.id})}catch(e){}
+      }
+    }catch(e){console.warn('[Login] self-heal profile:',e)}
     await onLoginSuccess();
   }catch(e){console.error('[Login]',e);showAuthErr(translateAuthError(e.message))}
   btn.disabled=false;btn.textContent='LOGIN';
