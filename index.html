@@ -671,7 +671,7 @@ function renderQuests(){const grid=document.getElementById('questsGrid');if(!sta
 // ═════ ROLL ═════
 function applyLuckToWeight(c,l){const tier=c.rarityTier;let bonus;if(tier===0)bonus=1/(1+l*1.5);else if(tier===1)bonus=1/(1+l*0.5);else if(tier>=9)bonus=1+Math.sqrt(l)*0.3;else{const bm=RARITY_LUCK_MULT[tier]||0;bonus=1+bm*Math.sqrt(l)*8}return c.weight*bonus}
 function rollCard(){
-  const r=Math.random();const luck=state.role==='admin'?100000:(state.stats.luck||0);const l=luck/100;
+  const r=Math.random();const luck=state.role==='admin'?100000:(state.stats.luck||0);const l=luck/1000;
   let totalW=0;const eff=new Array(CARDS.length);
   for(let i=0;i<CARDS.length;i++){eff[i]=applyLuckToWeight(CARDS[i],l);totalW+=eff[i]}
   const target=r*totalW;let cum=0;
