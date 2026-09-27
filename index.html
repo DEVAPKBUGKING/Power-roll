@@ -290,7 +290,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="stat"><div class="stat-v" id="sRolls">0</div><div class="stat-l">Rolls</div></div>
 <div class="stat"><div class="stat-v" id="sFound">0</div><div class="stat-l">Found</div></div>
 <div class="stat"><div class="stat-v luck" id="sLuck">+0</div><div class="stat-l">Luck</div></div>
-<div class="stat"><div class="stat-v money" id="sMoney">0</div><div class="stat-l">Money</div></div>
+<div class="stat" style="cursor:pointer" id="bestCardStat"><div class="stat-v" id="sBestCard" style="font-size:11px;color:var(--accent2);line-height:1.25">—</div><div class="stat-l">Best Card</div></div>
 </div>
 <div class="roll-area">
 <button class="roll-btn" id="rollBtn">ROLL<small>TAP TO ROLL</small></button>
@@ -602,7 +602,24 @@ function updateUI(){
   document.getElementById('sRolls').textContent=(s.total_rolls||0).toLocaleString();
   document.getElementById('sFound').textContent=Object.keys(state.inventory).length;
   document.getElementById('sLuck').textContent=isAdmin?'100K×':('+'+(s.luck||0));
-  document.getElementById('sMoney').textContent=isAdmin?'∞':(s.money||0).toLocaleString();
+  // Best Card display
+let bestCard=null;
+for(const pid in state.inventory){
+  if(state.inventory[pid].quantity>0){
+    const c=findCard(parseInt(pid));
+    if(c&&(!bestCard||c.chance>bestCard.chance))bestCard=c;
+  }
+}
+const bcEl=document.getElementById('sBestCard');
+if(bestCard){
+  const rar=RARITIES.find(r=>r.id===bestCard.rarity);
+  const rName=bestCard.rarity==='secret'?'SECRET':(bestCard.rarity==='limited'?'LIMITED':(rar?rar.name:bestCard.rarity));
+  const rColor=bestCard.rarity==='secret'?'var(--secret)':(bestCard.rarity==='limited'?'var(--limited)':`var(--${bestCard.rarity})`);
+  const name=bestCard.name.length>14?bestCard.name.slice(0,13)+'…':bestCard.name;
+  bcEl.innerHTML=`${escapeHtml(name)}<br><span style="font-size:9px;color:${rColor};font-weight:800;letter-spacing:1px">${rName}</span>`;
+}else{
+  bcEl.textContent='—';
+}
   document.getElementById('luckChip').textContent=isAdmin?'🍀 100K×':('🍀 +'+(s.luck||0));
   document.getElementById('moneyChip').textContent=isAdmin?'💰 ∞':('💰 '+(s.money||0).toLocaleString());
   document.getElementById('bagChip').textContent='🎒 '+uniqueCardCount()+' jenis';
