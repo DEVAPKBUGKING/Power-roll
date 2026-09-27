@@ -1,0 +1,25 @@
+{
+  "name": "Power Rolling — RNG Collectible",
+  "short_name": "Power Rolling",
+  "description": "Kumpulkan 1,250+ power langka! Roll, trade, auction, dan jadi yang terkuat.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07070c",
+  "theme_color": "#8b5cf6",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
