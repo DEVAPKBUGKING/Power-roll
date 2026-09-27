@@ -1,5 +1,13 @@
 <!DOCTYPE html>
-<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Power Rolling — Cloud</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
+<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Power Rolling — Cloud</title><!-- PWA Meta -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#8b5cf6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Power Rolling">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#07070c;--card:#14141f;--card2:#1a1a28;--border:#252534;--text:#ededf2;--muted:#8b8ba0;--accent:#8b5cf6;--accent2:#22d3ee;--luck:#4ade80;--money:#fbbf24;--common:#9ca3af;--uncommon:#4ade80;--rare:#60a5fa;--epic:#a78bfa;--legendary:#fbbf24;--mythic:#f472b6;--divine:#fde047;--transcendent:#22d3ee;--absolute:#ff00ff;--limited:#f97316;--secret:#facc15;--admin:#ef4444}
 html,body{height:100%;overflow-x:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.4}
@@ -1209,6 +1217,83 @@ function startQuestTimer(){
   sb.auth.onAuthStateChange((e)=>{if(e==='SIGNED_OUT')location.reload()});
 })();
 window.__PR={CARDS,LIMITED_CARDS,ALL_CARDS,state,sb};
+// ═════ PWA INSTALL ═════
+let deferredPrompt = null;
+let swRegistration = null;
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(reg => {
+      swRegistration = reg;
+      console.log('[PWA] SW registered');
+    }).catch(e => console.warn('[PWA] SW failed:', e));
+  });
+}
+
+// Capture install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Tampilkan tombol install kalau ada
+  showInstallButton();
+  console.log('[PWA] Install prompt captured');
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('[PWA] App installed!');
+  deferredPrompt = null;
+  hideInstallButton();
+  showToast('✅ Power Rolling terinstall!','');
+});
+
+function showInstallButton(){
+  if (document.getElementById('installBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'installBtn';
+  btn.innerHTML = '📲 INSTALL APP';
+  btn.style.cssText = `
+    position:fixed;bottom:20px;right:16px;z-index:9998;
+    background:linear-gradient(135deg,#8b5cf6,#22d3ee);
+    color:#fff;border:none;padding:12px 18px;border-radius:12px;
+    font-weight:800;font-size:12px;letter-spacing:1px;cursor:pointer;
+    font-family:inherit;box-shadow:0 8px 24px rgba(139,92,246,.5);
+    animation:installPulse 2s infinite;
+  `;
+  // Tambah keyframes animasi
+  if (!document.getElementById('installPulseStyle')) {
+    const style = document.createElement('style');
+    style.id = 'installPulseStyle';
+    style.textContent = '@keyframes installPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}';
+    document.head.appendChild(style);
+  }
+  btn.onclick = async () => {
+    if (!deferredPrompt) {
+      showToast('Buka menu browser → "Add to Home Screen"','');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] User choice:', outcome);
+    deferredPrompt = null;
+    hideInstallButton();
+  };
+  document.body.appendChild(btn);
+}
+
+function hideInstallButton(){
+  const b = document.getElementById('installBtn');
+  if (b) b.remove();
+}
+
+// Kalau browser tidak support beforeinstallprompt (iOS Safari), tampilkan tombol manual
+setTimeout(() => {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isIOS && !isStandalone && !document.getElementById('installBtn')) {
+    showInstallButton();
+  }
+}, 3000);
 </script>
 </body>
 </html>
